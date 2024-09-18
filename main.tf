@@ -189,3 +189,72 @@ resource "google_cloudbuild_trigger" "prod_trigger" {
     google_secret_manager_secret_iam_member.build_member,
   ]
 }
+
+# PR Trigger Resources
+
+resource "google_service_account" "cloudbuild_pr_service_account" {
+  account_id = "cloud-pr-sa-${random_id.id.hex}"
+}
+
+resource "google_project_iam_custom_role" "pr_role" {
+  role_id     = "${random_id.id.hex}_terraform_pr_role"
+  title       = "Flavor of the Week PR Role"
+  permissions = ["storage.buckets.list", "storage.buckets.get"]
+}
+
+resource "google_project_iam_member" "pr_act_as" {
+  project = var.project
+  role    = "roles/iam.serviceAccountUser"
+  member  = "serviceAccount:${google_service_account.cloudbuild_pr_service_account.email}"
+}
+
+resource "google_project_iam_member" "pr_logs_writer" {
+  project = var.project
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.cloudbuild_pr_service_account.email}"
+}
+
+resource "google_storage_bucket_iam_member" "pr_tfstate_bucket" {
+  bucket     = google_storage_bucket.tfstate_bucket.name
+  role       = "roles/storage.objectViewer"
+  member     = "serviceAccount:${google_service_account.cloudbuild_pr_service_account.email}"
+  depends_on = [google_storage_bucket.tfstate_bucket]
+}
+
+resource "google_project_iam_member" "pr_role" {
+  project = var.project
+  role    = google_project_iam_custom_role.pr_role.name
+  member  = "serviceAccount:${google_service_account.cloudbuild_pr_service_account.email}"
+}
+
+resource "google_cloudbuild_trigger" "pr_trigger" {
+  name     = "pr-flavor-of-the-week-${random_id.id.hex}"
+  location = var.region
+
+  repository_event_config {
+    repository = "projects/${var.project}/locations/${var.region}/connections/${var.repo_connection}/repositories/${var.repo_name}"
+
+    pull_request {
+      branch          = "^main$"
+      invert_regex    = false
+      comment_control = "COMMENTS_ENABLED"
+    }
+  }
+
+  substitutions = {
+    _TFSTATE_BUCKET     = google_storage_bucket.tfstate_bucket.name,
+    _DISCORD_APP_ID     = var.discord_app_id,
+    _DISCORD_PUBLIC_KEY = var.discord_public_key,
+    _DISCORD_SECRET_ID  = google_secret_manager_secret.discord_api.id,
+  }
+
+  service_account = google_service_account.cloudbuild_service_account.id
+  filename        = "pr_cloudbuild.yaml"
+  depends_on = [
+    google_project_iam_member.pr_act_as,
+    google_project_iam_custom_role.pr_role,
+    google_project_iam_member.pr_role,
+    google_project_iam_member.pr_logs_writer,
+    google_storage_bucket_iam_member.pr_tfstate_bucket,
+  ]
+}

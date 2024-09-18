@@ -1,0 +1,29 @@
+steps:
+  - id: 'Build terraform vars'
+    dir: infra
+    name: ubuntu
+    script: |
+      echo "Using Backend bucket: ${_TFSTATE_BUCKET}"
+      cat <<EOT_BOOT > "/workspace/terraform.tfvars"
+      project = "$PROJECT_ID"
+      region = "$LOCATION"
+      tfstate_bucket = "$_TFSTATE_BUCKET"
+      discord_app_id = "$_DISCORD_APP_ID"
+      discord_public_key = "$_DISCORD_PUBLIC_KEY"
+      discord_secret_id = "$_DISCORD_SECRET_ID"
+      EOT_BOOT
+  - id: 'terraform init'
+    dir: infra
+    name: 'hashicorp/terraform:latest'
+    script: terraform init -backend-config="bucket=${_TFSTATE_BUCKET}" -var-file=/workspace/terraform.tfvars
+  - id: 'terraform fmt'
+    dir: infra
+    name: 'hashicorp/terraform:latest'
+    script: terraform fmt -check
+  - id: 'terraform plan'
+    dir: infra
+    name: 'hashicorp/terraform:latest'
+    script: terraform plan -var-file=/workspace/terraform.tfvars -lock=false
+options:
+  logging: CLOUD_LOGGING_ONLY
+  automapSubstitutions: true
