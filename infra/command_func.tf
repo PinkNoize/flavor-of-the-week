@@ -1,13 +1,13 @@
-# Discord endpoint
+# Command Function
 
-resource "google_cloudfunctions2_function" "discord_endpoint" {
-  name        = "discord-endpoint-${random_id.id.hex}"
+resource "google_cloudfunctions2_function" "command" {
+  name        = "command-${random_id.id.hex}"
   location    = var.region
-  description = "Discord HTTP Endpoint"
+  description = "Command Function"
 
   build_config {
     runtime     = "go122"
-    entry_point = "DiscordFunctionEntry"
+    entry_point = ""
     source {
       storage_source {
         bucket = google_storage_bucket.sources.name
@@ -19,7 +19,7 @@ resource "google_cloudfunctions2_function" "discord_endpoint" {
   service_config {
     max_instance_count = 5
     available_memory   = "128Mi"
-    timeout_seconds    = 10
+    timeout_seconds    = 60
 
     environment_variables = {
       PROJECT_ID     = var.project,
@@ -28,15 +28,11 @@ resource "google_cloudfunctions2_function" "discord_endpoint" {
     }
     service_account_email = google_service_account.cloud_func_service_account.email
   }
-}
 
-resource "google_cloud_run_service_iam_member" "member" {
-  location = google_cloudfunctions2_function.default.location
-  service  = google_cloudfunctions2_function.default.name
-  role     = "roles/run.invoker"
-  member   = "allUsers"
-}
-
-output "function_uri" {
-  value = google_cloudfunctions2_function.default.service_config[0].uri
+  event_trigger {
+    trigger_region = var.region
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.command_topic.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
 }

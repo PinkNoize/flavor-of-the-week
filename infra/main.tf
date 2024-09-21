@@ -45,6 +45,49 @@ resource "google_app_engine_application" "app" {
   database_type = "CLOUD_FIRESTORE"
 }
 
+# Cloud Functions role
+
+resource "google_service_account" "cloud_func_service_account" {
+  account_id   = "funcs-service-acc-${random_id.id.hex}"
+  display_name = "Flavor of the Week Functions Account"
+}
+
+resource "google_project_iam_member" "firestore-iam" {
+  project = var.project
+  role    = "roles/datastore.user"
+  member  = "serviceAccount:${google_service_account.cloud_func_service_account.email}"
+}
+
+# Add pub/sub publisher
+resource "google_pubsub_topic_iam_member" "cloud_func_member" {
+  project = google_pubsub_topic.command_topic.project
+  topic   = google_pubsub_topic.command_topic.name
+  role    = "roles/pubsub.publisher"
+  member  = "serviceAccount:${google_service_account.cloud_func_service_account.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "cloud_func_member" {
+  project   = var.project
+  secret_id = var.discord_secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.discord_service_account.email}"
+}
+
 # Command Pub/Sub
 
-# Command Function
+resource "google_pubsub_topic" "command_topic" {
+  name = "command-topic-${random_id.id.hex}"
+}
+
+# Functions source
+
+data "archive_file" "default" {
+  type        = "zip"
+  output_path = "/tmp/functions-source.zip"
+  source_dir  = "../functions/"
+}
+resource "google_storage_bucket_object" "function-source" {
+  name   = "functions-source.zip"
+  bucket = google_storage_bucket.sources.name
+  source = data.archive_file.default.output_path # Add path to the zipped function source code
+}

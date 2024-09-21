@@ -1,33 +1,51 @@
 package functions
 
 import (
+	"context"
 	"encoding/hex"
 	"log"
 	"os"
 
+	"cloud.google.com/go/pubsub"
 	"github.com/bwmarrin/discordgo"
 	"go.uber.org/zap"
 )
 
-var logger *zap.Logger
-var slogger *zap.SugaredLogger
+var projectID string = os.Getenv("PROJECT_ID")
+var commandTopicID string = os.Getenv("COMMAND_TOPIC")
+
 var discordPubkey []byte
 var discordSession *discordgo.Session
+var commandTopic *pubsub.Topic
+var zapLogger *zap.Logger
+var zapSlogger *zap.SugaredLogger
 
 func init() {
 	var err error
-	logger, err = zap.NewProduction()
+	ctx := context.Background()
+	zapLogger, zapSlogger = setup_loggers()
+	pubsubClient, err := pubsub.NewClient(ctx, projectID)
 	if err != nil {
-		log.Fatalf("Failed to create logger: %v", err)
+		zapSlogger.Fatalf("Failed to create pubsub client: %v", err)
 	}
-	slogger = logger.Sugar()
+	commandTopic = pubsubClient.Topic(commandTopicID)
 
 	discordPubkey, err = hex.DecodeString(os.Getenv("DISCORD_PUBKEY"))
 	if err != nil {
-		slogger.Fatalf("Failed to decode public key: %v", err)
+		zapSlogger.Fatalf("Failed to decode public key: %v", err)
 	}
 	discordSession, err = discordgo.New("")
 	if err != nil {
-		slogger.Fatalf("Error: initDiscord: %v", err)
+		zapSlogger.Fatalf("Failed to create discord sesstion: %v", err)
 	}
+
+}
+
+func setup_loggers() (*zap.Logger, *zap.SugaredLogger) {
+	logger, err := zap.NewProduction()
+	if err != nil {
+		log.Fatalf("Failed to create logger: %v", err)
+	}
+	slogger := logger.Sugar()
+	return logger, slogger
 }
