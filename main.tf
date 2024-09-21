@@ -45,6 +45,20 @@ resource "google_service_account" "cloudbuild_service_account" {
   account_id = "cloud-sa"
 }
 
+resource "google_project_iam_custom_role" "cloudbuild_policy_role" {
+  role_id     = "cloud_sa_policy_${random_id.id.hex}"
+  title       = "CloudBuild FOW SA Custom Role"
+  description = ""
+  permissions = ["resourcemanager.projects.getIamPolicy",
+                 "resourcemanager.projects.setIamPolicy"]
+}
+
+resource "google_project_iam_member" "cloud_build_custom_role" {
+  project = var.project
+  role    = google_project_iam_custom_role.cloudbuild_policy_role.id
+  member = "serviceAccount:${google_service_account.cloudbuild_service_account.email}"
+}
+
 resource "google_project_iam_member" "act_as" {
   project = var.project
   role    = "roles/iam.serviceAccountUser"
@@ -194,6 +208,7 @@ resource "google_cloudbuild_trigger" "prod_trigger" {
     google_project_iam_member.logs_writer,
     google_secret_manager_secret_iam_member.build_member,
     google_project_iam_member.eventarc_admin,
+    google_project_iam_member.cloud_build_custom_role,
   ]
 }
 
