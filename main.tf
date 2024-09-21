@@ -50,13 +50,13 @@ resource "google_project_iam_custom_role" "cloudbuild_policy_role" {
   title       = "CloudBuild FOW SA Custom Role"
   description = ""
   permissions = ["resourcemanager.projects.getIamPolicy",
-                 "resourcemanager.projects.setIamPolicy"]
+  "resourcemanager.projects.setIamPolicy"]
 }
 
 resource "google_project_iam_member" "cloud_build_custom_role" {
   project = var.project
   role    = google_project_iam_custom_role.cloudbuild_policy_role.id
-  member = "serviceAccount:${google_service_account.cloudbuild_service_account.email}"
+  member  = "serviceAccount:${google_service_account.cloudbuild_service_account.email}"
 }
 
 resource "google_project_iam_member" "act_as" {
