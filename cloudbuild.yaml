@@ -1,4 +1,14 @@
 steps:
+  - id: 'Test functions module'
+    dir: functions
+    name: golang:1.22
+    script: go test
+    waitFor: ['-']
+  - id: 'Test deploy module'
+    dir: deploy-commands-function
+    name: golang:1.22
+    script: go test
+    waitFor: ['-']
   - id: 'Build terraform vars'
     dir: infra
     name: ubuntu

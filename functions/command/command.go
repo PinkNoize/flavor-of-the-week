@@ -44,7 +44,7 @@ func (c *DiscordCommand) LogCommand(ctx context.Context) {
 	l := ctxzap.Extract(ctx)
 	command := c.interaction.ApplicationCommandData()
 
-	l.Sugar().Info("audit",
+	l.Sugar().Infow("audit",
 		"nick", c.UserNick(),
 		"userid", c.UserID(),
 		"command", command.Name,

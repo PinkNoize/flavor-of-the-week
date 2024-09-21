@@ -48,7 +48,7 @@ func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 	case discordgo.InteractionApplicationCommand:
 		err = forwardCommand(ctx, &cmd)
 		if err != nil {
-			slogger.Error("Failed to forward command",
+			slogger.Errorw("Failed to forward command",
 				"error", err,
 			)
 			return
@@ -56,7 +56,7 @@ func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 		slogger.Info("Deferring response...")
 		err = writeDeferredResponse(w)
 		if err != nil {
-			slogger.Error("Failed to return deferred response",
+			slogger.Errorw("Failed to return deferred response",
 				"error", err,
 			)
 			return
@@ -65,7 +65,7 @@ func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 		slogger.Error("Autocomplete not implemented")
 		http.Error(w, "Autocomplete not implemented", http.StatusNotImplemented)
 	default:
-		slogger.Error("Unknown Interaction Type",
+		slogger.Errorw("Unknown Interaction Type",
 			"interactionType", cmd.Type(),
 		)
 		http.Error(w, "Unknown Interaction Type", http.StatusNotImplemented)
@@ -77,7 +77,7 @@ func handlePing(ctx context.Context, w http.ResponseWriter) {
 	l.Info("Ping received")
 	_, err := w.Write([]byte(`{"type":1}`))
 	if err != nil {
-		l.Sugar().Error("Failed to write ping",
+		l.Sugar().Errorw("Failed to write ping",
 			"error", err,
 		)
 		http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
