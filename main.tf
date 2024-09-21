@@ -263,10 +263,6 @@ resource "google_cloudbuild_trigger" "pr_trigger" {
     }
   }
 
-  approval_config {
-    approval_required = true
-  }
-
   substitutions = {
     _TFSTATE_BUCKET     = google_storage_bucket.tfstate_bucket.name,
     _DISCORD_APP_ID     = var.discord_app_id,
