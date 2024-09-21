@@ -88,7 +88,7 @@ data "archive_file" "default" {
   source_dir  = "../functions/"
 }
 resource "google_storage_bucket_object" "function-source" {
-  name   = "functions-source.zip"
+  name   = "functions-source-${data.archive_file.default.output_sha256}.zip"
   bucket = google_storage_bucket.sources.name
   source = data.archive_file.default.output_path # Add path to the zipped function source code
 }
