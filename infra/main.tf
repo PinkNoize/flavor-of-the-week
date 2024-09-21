@@ -48,7 +48,7 @@ resource "google_app_engine_application" "app" {
 # Cloud Functions role
 
 resource "google_service_account" "cloud_func_service_account" {
-  account_id   = "funcs-service-acc-${random_id.id.hex}"
+  account_id   = "funcs-sa-${random_id.id.hex}"
   display_name = "Flavor of the Week Functions Account"
 }
 
