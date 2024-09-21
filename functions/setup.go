@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"cloud.google.com/go/pubsub"
-	"github.com/bwmarrin/discordgo"
 	"go.uber.org/zap"
 )
 
@@ -15,7 +14,6 @@ var projectID string = os.Getenv("PROJECT_ID")
 var commandTopicID string = os.Getenv("COMMAND_TOPIC")
 
 var discordPubkey []byte
-var discordSession *discordgo.Session
 var commandTopic *pubsub.Topic
 var zapLogger *zap.Logger
 var zapSlogger *zap.SugaredLogger
@@ -34,11 +32,6 @@ func init() {
 	if err != nil {
 		zapSlogger.Fatalf("Failed to decode public key: %v", err)
 	}
-	discordSession, err = discordgo.New("")
-	if err != nil {
-		zapSlogger.Fatalf("Failed to create discord sesstion: %v", err)
-	}
-
 }
 
 func setup_loggers() (*zap.Logger, *zap.SugaredLogger) {

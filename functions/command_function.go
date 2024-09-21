@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/PinkNoize/flavor-of-the-week/functions/command"
@@ -19,9 +20,12 @@ type PubSubMessage struct {
 }
 
 func CommandPubSub(ctx context.Context, m PubSubMessage) error {
+	var err error
 	logger, slogger := zapLogger, zapSlogger
-	defer slogger.Sync()
-	defer logger.Sync()
+	defer func() {
+		err = errors.Join(slogger.Sync())
+		err = errors.Join(logger.Sync())
+	}()
 	ctx = ctxzap.ToContext(ctx, logger)
 
 	cmd, err := command.FromReader(ctx, bytes.NewReader(m.Data))

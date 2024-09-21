@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ed25519"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -15,9 +16,12 @@ import (
 )
 
 func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
+	var err error
 	logger, slogger := zapLogger, zapSlogger
-	defer slogger.Sync()
-	defer logger.Sync()
+	defer func() {
+		err = errors.Join(slogger.Sync())
+		err = errors.Join(logger.Sync())
+	}()
 	ctx := ctxzap.ToContext(r.Context(), logger)
 
 	verified := discordgo.VerifyInteraction(r, ed25519.PublicKey(discordPubkey))
