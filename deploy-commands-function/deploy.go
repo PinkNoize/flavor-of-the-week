@@ -18,31 +18,62 @@ func Ptr[T any](v T) *T {
 var commands = []*discordgo.ApplicationCommand{
 	// User commands
 	{
-		Name:         "fow",
-		Description:  "Flavor of the Week",
+		Name:         "add",
+		Description:  "Add a game/activity to the pool",
+		Type:         discordgo.ChatApplicationCommand,
+		DMPermission: Ptr(false),
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Name:        "type",
+				Description: "Type of activities to list",
+				Type:        discordgo.ApplicationCommandOptionString,
+				Required:    true,
+				Choices: []*discordgo.ApplicationCommandOptionChoice{
+					{
+						Name:  "Game",
+						Value: "game",
+					},
+					{
+						Name:  "Activity",
+						Value: "activity",
+					},
+				},
+			},
+			{
+				Name:         "name",
+				Description:  "Name of the game/activity",
+				Type:         discordgo.ApplicationCommandOptionString,
+				Required:     true,
+				Autocomplete: false,
+			},
+		},
+	},
+	{
+		Name:         "remove",
+		Description:  "Remove a game/activity from the pool",
+		Type:         discordgo.ChatApplicationCommand,
+		DMPermission: Ptr(false),
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Name:         "name",
+				Description:  "Name of the game/activity",
+				Type:         discordgo.ApplicationCommandOptionString,
+				Required:     true,
+				Autocomplete: false,
+			},
+		},
+	},
+	{
+		Name:         "nominations",
+		Description:  "Manage nominations for the next poll",
+		Type:         discordgo.ChatApplicationCommand,
 		DMPermission: Ptr(false),
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Name:        "add",
-				Description: "Add a game/activity to the pool",
+				Description: "Nominate a game/activity for the next poll",
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
 				Options: []*discordgo.ApplicationCommandOption{
-					{
-						Name:        "type",
-						Description: "Type of activities to list",
-						Type:        discordgo.ApplicationCommandOptionString,
-						Required:    true,
-						Choices: []*discordgo.ApplicationCommandOptionChoice{
-							{
-								Name:  "Game",
-								Value: "game",
-							},
-							{
-								Name:  "Activity",
-								Value: "activity",
-							},
-						},
-					},
 					{
 						Name:         "name",
 						Description:  "Name of the game/activity",
@@ -54,7 +85,7 @@ var commands = []*discordgo.ApplicationCommand{
 			},
 			{
 				Name:        "remove",
-				Description: "Remove a game/activity from the pool",
+				Description: "Remove a nomination for a game/activity",
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
 				Options: []*discordgo.ApplicationCommandOption{
 					{
@@ -67,78 +98,13 @@ var commands = []*discordgo.ApplicationCommand{
 				},
 			},
 			{
-				Name:        "nominations",
-				Description: "Manage nominations for the next poll",
-				Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
-				Options: []*discordgo.ApplicationCommandOption{
-					{
-						Name:        "add",
-						Description: "Nominate a game/activity for the next poll",
-						Type:        discordgo.ApplicationCommandOptionSubCommand,
-						Options: []*discordgo.ApplicationCommandOption{
-							{
-								Name:         "name",
-								Description:  "Name of the game/activity",
-								Type:         discordgo.ApplicationCommandOptionString,
-								Required:     true,
-								Autocomplete: false,
-							},
-						},
-					},
-					{
-						Name:        "remove",
-						Description: "Remove a nomination for a game/activity",
-						Type:        discordgo.ApplicationCommandOptionSubCommand,
-						Options: []*discordgo.ApplicationCommandOption{
-							{
-								Name:         "name",
-								Description:  "Name of the game/activity",
-								Type:         discordgo.ApplicationCommandOptionString,
-								Required:     true,
-								Autocomplete: false,
-							},
-						},
-					},
-					{
-						Name:        "list",
-						Description: "List your nominations",
-						Type:        discordgo.ApplicationCommandOptionSubCommand,
-						Options: []*discordgo.ApplicationCommandOption{
-							{
-								Name:         "name",
-								Description:  "Name of the game/activity",
-								Type:         discordgo.ApplicationCommandOptionString,
-								Required:     false,
-								Autocomplete: false,
-							},
-						},
-					},
-				},
-			},
-			{
-				Name:        "pool",
-				Description: "List all games/activities in the pool",
+				Name:        "list",
+				Description: "List your nominations",
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
 				Options: []*discordgo.ApplicationCommandOption{
 					{
-						Name:        "type",
-						Description: "Type of activities to list",
-						Type:        discordgo.ApplicationCommandOptionString,
-						Required:    false,
-						Choices: []*discordgo.ApplicationCommandOptionChoice{
-							{
-								Name:  "Game",
-								Value: "game",
-							},
-							{
-								Name:  "Activity",
-								Value: "activity",
-							},
-						},
-					},
-					{
 						Name:         "name",
-						Description:  "Name of the activity to list",
+						Description:  "Name of the game/activity",
 						Type:         discordgo.ApplicationCommandOptionString,
 						Required:     false,
 						Autocomplete: false,
@@ -147,44 +113,73 @@ var commands = []*discordgo.ApplicationCommand{
 			},
 		},
 	},
+	{
+		Name:         "pool",
+		Description:  "List all games/activities in the pool",
+		Type:         discordgo.ChatApplicationCommand,
+		DMPermission: Ptr(false),
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Name:        "type",
+				Description: "Type of activities to list",
+				Type:        discordgo.ApplicationCommandOptionString,
+				Required:    false,
+				Choices: []*discordgo.ApplicationCommandOptionChoice{
+					{
+						Name:  "Game",
+						Value: "game",
+					},
+					{
+						Name:  "Activity",
+						Value: "activity",
+					},
+				},
+			},
+			{
+				Name:         "name",
+				Description:  "Name of the activity to list",
+				Type:         discordgo.ApplicationCommandOptionString,
+				Required:     false,
+				Autocomplete: false,
+			},
+		},
+	},
 	// Admin commands
 	{
-		Name:                     "fow-setup",
-		Description:              "Flavor of the Week Setup",
+		Name:                     "poll-channel",
+		Description:              "Sets the channel to post the poll in",
+		Type:                     discordgo.ChatApplicationCommand,
 		DefaultMemberPermissions: Ptr(int64(discordgo.PermissionAdministrator)),
 		DMPermission:             Ptr(false),
 		Options: []*discordgo.ApplicationCommandOption{
 			{
-				Name:        "poll-channel",
-				Description: "Sets the channel to post the poll in",
-				Type:        discordgo.ApplicationCommandOptionSubCommand,
-				Options: []*discordgo.ApplicationCommandOption{
-					{
-						Name:        "channel",
-						Description: "Channel to send the polls in",
-						Type:        discordgo.ApplicationCommandOptionChannel,
-						Required:    true,
-					},
-				},
+				Name:        "channel",
+				Description: "Channel to send the polls in",
+				Type:        discordgo.ApplicationCommandOptionChannel,
+				Required:    true,
 			},
+		},
+	},
+	{
+		Name:                     "start-poll",
+		Description:              "Start a poll",
+		Type:                     discordgo.ChatApplicationCommand,
+		DefaultMemberPermissions: Ptr(int64(discordgo.PermissionAdministrator)),
+		DMPermission:             Ptr(false),
+	},
+	{
+		Name:                     "override-fow",
+		Description:              "Override the current Flavor of the Week",
+		Type:                     discordgo.ChatApplicationCommand,
+		DefaultMemberPermissions: Ptr(int64(discordgo.PermissionAdministrator)),
+		DMPermission:             Ptr(false),
+		Options: []*discordgo.ApplicationCommandOption{
 			{
-				Name:        "start-poll",
-				Description: "Start a poll",
-				Type:        discordgo.ApplicationCommandOptionSubCommand,
-			},
-			{
-				Name:        "override-fow",
-				Description: "Override the current Flavor of the Week",
-				Type:        discordgo.ApplicationCommandOptionSubCommand,
-				Options: []*discordgo.ApplicationCommandOption{
-					{
-						Name:         "name",
-						Description:  "Name of the game/activity",
-						Type:         discordgo.ApplicationCommandOptionString,
-						Required:     true,
-						Autocomplete: false,
-					},
-				},
+				Name:         "name",
+				Description:  "Name of the game/activity",
+				Type:         discordgo.ApplicationCommandOptionString,
+				Required:     true,
+				Autocomplete: false,
 			},
 		},
 	},
