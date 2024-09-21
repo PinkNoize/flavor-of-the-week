@@ -31,12 +31,12 @@ resource "google_cloudfunctions2_function" "discord_endpoint" {
 }
 
 resource "google_cloud_run_service_iam_member" "member" {
-  location = google_cloudfunctions2_function.default.location
-  service  = google_cloudfunctions2_function.default.name
+  location = google_cloudfunctions2_function.discord_endpoint.location
+  service  = google_cloudfunctions2_function.discord_endpoint.name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
 
 output "function_uri" {
-  value = google_cloudfunctions2_function.default.service_config[0].uri
+  value = google_cloudfunctions2_function.discord_endpoint.service_config[0].uri
 }
