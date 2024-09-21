@@ -23,7 +23,7 @@ resource "google_cloudfunctions2_function" "discord_endpoint" {
 
     environment_variables = {
       PROJECT_ID     = var.project,
-      COMMAND_TOPIC  = google_pubsub_topic.command_topic.id,
+      COMMAND_TOPIC  = google_pubsub_topic.command_topic.name,
       DISCORD_PUBKEY = var.discord_public_key,
     }
     service_account_email = google_service_account.cloud_func_service_account.email
