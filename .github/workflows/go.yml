@@ -16,29 +16,25 @@ on:
       - "deploy-commands-function/**"
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-dir: ["./functions", "./deploy-commands-function"]
     steps:
     - uses: actions/checkout@v4
-
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
         go-version: '1.22'
-
-    - name: Build Deploy function
-      run: go build -v .
-      working-directory: ./deploy-commands-function
-
-    - name: Test Deploy function
-      run: go test -v .
-      working-directory: ./deploy-commands-function
-
-    - name: Build functions
-      run: go build -v .
-      working-directory: ./functions
-
-    - name: Test functions
-      run: go test -v .
-      working-directory: ./functions
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v6
+      with:
+        version: v1.60
+        working-directory: ${{ matrix.go-dir }}
+    - name: Build
+      run: go build -v
+      working-directory: ${{ matrix.go-dir }}
+    - name: Test
+      run: go test -v
+      working-directory: ${{ matrix.go-dir }}
