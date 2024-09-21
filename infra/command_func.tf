@@ -7,7 +7,7 @@ resource "google_cloudfunctions2_function" "command" {
 
   build_config {
     runtime     = "go122"
-    entry_point = ""
+    entry_point = "CommandPubSub"
     source {
       storage_source {
         bucket = google_storage_bucket.sources.name

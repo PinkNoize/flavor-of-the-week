@@ -25,6 +25,7 @@ module "project-services" {
     "appengine.googleapis.com",
     "cloudfunctions.googleapis.com",
     "run.googleapis.com",
+    "eventarc.googleapis.com",
   ]
 }
 

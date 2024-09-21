@@ -126,8 +126,14 @@ resource "google_project_iam_member" "logs_writer" {
 resource "google_secret_manager_secret_iam_member" "build_member" {
   project   = var.project
   secret_id = google_secret_manager_secret.discord_api.id
-  role      = "roles/secretmanager.secretAccessor"
+  role      = "roles/secretmanager.admin"
   member    = "serviceAccount:${google_service_account.cloudbuild_service_account.email}"
+}
+
+resource "google_project_iam_member" "eventarc_admin" {
+  project = var.project
+  role    = "roles/eventarc.admin"
+  member  = "serviceAccount:${google_service_account.cloudbuild_service_account.email}"
 }
 
 # Discord API secret
@@ -187,6 +193,7 @@ resource "google_cloudbuild_trigger" "prod_trigger" {
     google_project_iam_member.service_usage_admin,
     google_project_iam_member.logs_writer,
     google_secret_manager_secret_iam_member.build_member,
+    google_project_iam_member.eventarc_admin,
   ]
 }
 
