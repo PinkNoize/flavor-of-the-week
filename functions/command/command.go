@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
 	"github.com/bwmarrin/discordgo"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 )
@@ -91,4 +92,50 @@ func (c *DiscordCommand) UserNick() string {
 
 func (c *DiscordCommand) CommandName() string {
 	return c.interaction.ApplicationCommandData().Name
+}
+
+func (c *DiscordCommand) ToCommand() (Command, error) {
+	if c.Type() != discordgo.InteractionApplicationCommand {
+		return nil, fmt.Errorf("not a valid command")
+	}
+	commandData := c.interaction.ApplicationCommandData()
+	args := optionsToMap(commandData.Options)
+	switch commandData.Name {
+	case "add":
+		if pass, missing := verifyOpts(args, []string{"type", "name"}); !pass {
+			return nil, fmt.Errorf("missing options: %v", missing)
+		}
+		return NewAddCommand(c.interaction.GuildID, args["type"].StringValue(), args["name"].StringValue()), nil
+	case "remove":
+		if pass, missing := verifyOpts(args, []string{"type", "name"}); !pass {
+			return nil, fmt.Errorf("missing options: %v", missing)
+		}
+		return NewRemoveCommand(c.interaction.GuildID, args["name"].StringValue()), nil
+	default:
+		return nil, fmt.Errorf("not a valid command: %v", commandData.Name)
+	}
+}
+
+func optionsToMap(opts []*discordgo.ApplicationCommandInteractionDataOption) map[string]*discordgo.ApplicationCommandInteractionDataOption {
+	mappedOpts := make(map[string]*discordgo.ApplicationCommandInteractionDataOption)
+
+	for i := range opts {
+		if opts[i] != nil {
+			mappedOpts[opts[i].Name] = opts[i]
+		}
+	}
+	return mappedOpts
+}
+
+func verifyOpts(opts map[string]*discordgo.ApplicationCommandInteractionDataOption, expected []string) (bool, string) {
+	for _, v := range expected {
+		if _, ok := opts[v]; !ok {
+			return false, v
+		}
+	}
+	return true, ""
+}
+
+type Command interface {
+	Execute(ctx context.Context, cl *clients.Clients) error
 }

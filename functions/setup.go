@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"cloud.google.com/go/pubsub"
+	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -15,6 +16,7 @@ var projectID string = os.Getenv("PROJECT_ID")
 var commandTopicID string = os.Getenv("COMMAND_TOPIC")
 
 var discordPubkey []byte
+var clientLoader clients.Clients
 var commandTopic *pubsub.Topic
 var zapLogger *zap.Logger
 var zapSlogger *zap.SugaredLogger

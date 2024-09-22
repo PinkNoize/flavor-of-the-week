@@ -28,11 +28,22 @@ func CommandPubSub(ctx context.Context, m PubSubMessage) error {
 	}()
 	ctx = ctxzap.ToContext(ctx, logger)
 
-	cmd, err := command.FromReader(ctx, bytes.NewReader(m.Data))
+	// TODO: Add deferred response to discord with result
+
+	discordCmd, err := command.FromReader(ctx, bytes.NewReader(m.Data))
 	if err != nil {
 		return fmt.Errorf("error parsing command: %v", err)
 	}
-	cmd.LogCommand(ctx)
+	discordCmd.LogCommand(ctx)
+
+	cmd, err := discordCmd.ToCommand()
+	if err != nil {
+		return fmt.Errorf("converting to command: %v", err)
+	}
+	err = cmd.Execute(ctx, &clientLoader)
+	if err != nil {
+		return fmt.Errorf("executing command: %v", err)
+	}
 
 	return nil
 }
