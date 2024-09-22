@@ -6,6 +6,7 @@ import (
 
 	"github.com/PinkNoize/flavor-of-the-week/functions/activity"
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
+	"github.com/bwmarrin/discordgo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -24,10 +25,10 @@ func NewAddCommand(guildID, activityType, name string) *AddCommand {
 	}
 }
 
-func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) error {
+func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookParams, error) {
 	firestoreClient, err := cl.Firestore()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	var act *activity.Activity
 	activityDoc := firestoreClient.Collection(c.GuildID).Doc(c.Name)
@@ -36,14 +37,16 @@ func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) error {
 		act = activity.NewActivity(activity.ACTIVITY, c.Name)
 	// TODO: check activity type, if game lookup, validate first
 	default:
-		return fmt.Errorf("Activity type not supported: %v", c.ActivityType)
+		return nil, fmt.Errorf("Activity type not supported: %v", c.ActivityType)
 	}
 	_, err = activityDoc.Create(ctx, act)
 	if err != nil {
 		if status.Code(err) == codes.AlreadyExists {
-			return fmt.Errorf("activity %v already exists", c.Name)
+			return nil, fmt.Errorf("activity %v already exists", c.Name)
 		}
-		return fmt.Errorf("activityDoc.Create: %v", err)
+		return nil, fmt.Errorf("activityDoc.Create: %v", err)
 	}
-	return nil
+	return &discordgo.WebhookParams{
+		Content: fmt.Sprintf("%v added to the pool", c.Name),
+	}, nil
 }

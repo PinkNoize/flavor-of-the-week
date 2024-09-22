@@ -8,6 +8,7 @@ import (
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
 	"github.com/bwmarrin/discordgo"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
+	"go.uber.org/zap"
 )
 
 type contextKey string
@@ -42,15 +43,14 @@ func (c *DiscordCommand) ToContext(ctx context.Context) context.Context {
 }
 
 func (c *DiscordCommand) LogCommand(ctx context.Context) {
-	l := ctxzap.Extract(ctx)
 	command := c.interaction.ApplicationCommandData()
 
-	l.Sugar().Infow(fmt.Sprintf("User %v (%v) ran %v", c.UserNick(), c.UserID(), command.Name),
-		"type", "audit",
-		"nick", c.UserNick(),
-		"userid", c.UserID(),
-		"command", command.Name,
-		"options", command.Options,
+	ctxzap.Info(ctx, fmt.Sprintf("User %v (%v) ran %v", c.UserNick(), c.UserID(), command.Name),
+		zap.String("type", "audit"),
+		zap.String("nick", c.UserNick()),
+		zap.String("userid", c.UserID()),
+		zap.String("command", command.Name),
+		zap.Any("options", command.Options),
 	)
 }
 
@@ -58,8 +58,8 @@ func (c *DiscordCommand) Type() discordgo.InteractionType {
 	return c.interaction.Type
 }
 
-func (c *DiscordCommand) Interaction() discordgo.Interaction {
-	return c.interaction
+func (c *DiscordCommand) Interaction() *discordgo.Interaction {
+	return &c.interaction
 }
 
 func (c *DiscordCommand) RawInteraction() []byte {
@@ -137,5 +137,5 @@ func verifyOpts(opts map[string]*discordgo.ApplicationCommandInteractionDataOpti
 }
 
 type Command interface {
-	Execute(ctx context.Context, cl *clients.Clients) error
+	Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookParams, error)
 }

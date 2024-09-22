@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
+	"github.com/bwmarrin/discordgo"
 )
 
 type RemoveCommand struct {
@@ -18,7 +19,9 @@ func NewRemoveCommand(guildID, name string) *RemoveCommand {
 	}
 }
 
-func (c *RemoveCommand) Execute(ctx context.Context, cl *clients.Clients) error {
+func (c *RemoveCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookParams, error) {
 	// TODO
-	return nil
+	return &discordgo.WebhookParams{
+		Content: "🚧 Command not implemented yet",
+	}, nil
 }
