@@ -40,7 +40,7 @@ func CommandPubSub(ctx context.Context, m PubSubMessage) error {
 	if err != nil {
 		return fmt.Errorf("converting to command: %v", err)
 	}
-	err = cmd.Execute(ctx, &clientLoader)
+	err = cmd.Execute(ctx, clientLoader)
 	if err != nil {
 		return fmt.Errorf("executing command: %v", err)
 	}
