@@ -23,5 +23,6 @@ func (c *RemoveCommand) Execute(ctx context.Context, cl *clients.Clients) (*disc
 	// TODO
 	return &discordgo.WebhookParams{
 		Content: "🚧 Command not implemented yet",
+		Flags:   discordgo.MessageFlagsEphemeral,
 	}, nil
 }

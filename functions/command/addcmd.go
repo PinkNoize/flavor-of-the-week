@@ -48,5 +48,6 @@ func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discord
 	}
 	return &discordgo.WebhookParams{
 		Content: fmt.Sprintf("%v added to the pool", c.Name),
+		Flags:   discordgo.MessageFlagsEphemeral,
 	}, nil
 }
