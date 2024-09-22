@@ -26,6 +26,7 @@ module "project-services" {
     "cloudfunctions.googleapis.com",
     "run.googleapis.com",
     "eventarc.googleapis.com",
+    "firestore.googleapis.com",
   ]
 }
 
