@@ -1,13 +1,10 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
 
-	secretmanager "cloud.google.com/go/secretmanager/apiv1"
-	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -186,23 +183,11 @@ var commands = []*discordgo.ApplicationCommand{
 }
 
 func main() {
-	discordSecretID := os.Getenv("DISCORD_SECRET_ID")
 	discordAppID := os.Getenv("DISCORD_APP_ID")
-	ctx := context.Background()
-
-	client, err := secretmanager.NewClient(ctx)
-	if err != nil {
-		log.Fatalf("Error: NewClient: %v", err)
+	discordAPIToken := os.Getenv("DISCORD_SECRET_TOKEN")
+	if discordAPIToken == "" {
+		log.Fatal("Discord token not supplied")
 	}
-	defer client.Close()
-	req := &secretmanagerpb.AccessSecretVersionRequest{
-		Name: fmt.Sprintf("%v/versions/latest", discordSecretID),
-	}
-	result, err := client.AccessSecretVersion(ctx, req)
-	if err != nil {
-		log.Fatalf("Error: AccessSecretVersion: %v", err)
-	}
-	discordAPIToken := string(result.Payload.Data)
 	discordDeploySession, err := discordgo.New(fmt.Sprintf("Bot %v", discordAPIToken))
 	if err != nil {
 		log.Fatalf("Invalid bot parameters: %v", err)

@@ -35,6 +35,13 @@ steps:
     env:
       - 'DISCORD_SECRET_ID=$_DISCORD_SECRET_ID'
       - 'DISCORD_APP_ID=$_DISCORD_APP_ID'
+    secretEnv: [
+      'DISCORD_SECRET_TOKEN'
+    ]
+  availableSecrets:
+    secretManager:
+    - versionName: ${_DISCORD_SECRET_ID}/versions/latest
+      env: 'DISCORD_SECRET_TOKEN'
 options:
   logging: CLOUD_LOGGING_ONLY
   automapSubstitutions: true
