@@ -16,7 +16,7 @@ var projectID string = os.Getenv("PROJECT_ID")
 var commandTopicID string = os.Getenv("COMMAND_TOPIC")
 
 var discordPubkey []byte
-var clientLoader clients.Clients
+var clientLoader *clients.Clients
 var commandTopic *pubsub.Topic
 var zapLogger *zap.Logger
 var zapSlogger *zap.SugaredLogger
@@ -35,6 +35,7 @@ func init() {
 	if err != nil {
 		zapSlogger.Fatalf("Failed to decode public key: %v", err)
 	}
+	clientLoader = clients.New(ctx, projectID)
 }
 
 func setup_loggers() (*zap.Logger, *zap.SugaredLogger) {
