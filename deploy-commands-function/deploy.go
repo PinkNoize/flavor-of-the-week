@@ -193,10 +193,8 @@ func main() {
 		log.Fatalf("Invalid bot parameters: %v", err)
 	}
 
-	for i := range commands {
-		_, err := discordDeploySession.ApplicationCommandCreate(discordAppID, "", commands[i])
-		if err != nil {
-			log.Fatalf("ApplicationCommandCreate: %v", err)
-		}
+	_, err = discordDeploySession.ApplicationCommandBulkOverwrite(discordAppID, "", commands)
+	if err != nil {
+		log.Fatalf("ApplicationCommandBulkOverwrite: %v", err)
 	}
 }
