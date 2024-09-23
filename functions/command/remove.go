@@ -8,14 +8,14 @@ import (
 )
 
 type RemoveCommand struct {
-	guildID string
-	name    string
+	GuildID string
+	Name    string
 }
 
 func NewRemoveCommand(guildID, name string) *RemoveCommand {
 	return &RemoveCommand{
-		guildID: guildID,
-		name:    name,
+		GuildID: guildID,
+		Name:    name,
 	}
 }
 

@@ -107,10 +107,53 @@ func (c *DiscordCommand) ToCommand() (Command, error) {
 		}
 		return NewAddCommand(c.interaction.GuildID, args["type"].StringValue(), args["name"].StringValue()), nil
 	case "remove":
-		if pass, missing := verifyOpts(args, []string{"type", "name"}); !pass {
+		if pass, missing := verifyOpts(args, []string{"name"}); !pass {
 			return nil, fmt.Errorf("missing options: %v", missing)
 		}
 		return NewRemoveCommand(c.interaction.GuildID, args["name"].StringValue()), nil
+	case "nominations":
+		subcmd := commandData.Options[0]
+		subcmd_args := optionsToMap(subcmd.Options)
+		switch subcmd.Name {
+		case "add":
+			if pass, missing := verifyOpts(subcmd_args, []string{"name"}); !pass {
+				return nil, fmt.Errorf("missing options: %v", missing)
+			}
+			return NewNominationAddCommand(c.interaction.GuildID, subcmd_args["name"].StringValue()), nil
+		case "remove":
+			if pass, missing := verifyOpts(subcmd_args, []string{"name"}); !pass {
+				return nil, fmt.Errorf("missing options: %v", missing)
+			}
+			return NewNominationAddCommand(c.interaction.GuildID, subcmd_args["name"].StringValue()), nil
+		case "list":
+			var name string
+			nameOpt, ok := args["name"]
+			if !ok {
+				name = nameOpt.StringValue()
+			}
+			return NewNominationListCommand(c.interaction.GuildID, c.interaction.User.ID, name), nil
+		default:
+			return nil, fmt.Errorf("not a valid command: %v", subcmd.Name)
+		}
+	case "pool":
+		var name string
+		nameOpt, ok := args["name"]
+		if !ok {
+			name = nameOpt.StringValue()
+		}
+		var actType string
+		actTypeOpt, ok := args["type"]
+		if !ok {
+			actType = actTypeOpt.StringValue()
+		}
+		return NewPoolListCommand(c.interaction.GuildID, name, actType), nil
+	case "start-poll":
+		return NewStartPollCommand(c.interaction.GuildID), nil
+	case "poll-channel":
+		if pass, missing := verifyOpts(args, []string{"channel"}); !pass {
+			return nil, fmt.Errorf("missing options: %v", missing)
+		}
+		return NewSetPollChannelCommand(c.interaction.GuildID, args["channel"].ChannelValue(nil)), nil
 	default:
 		return nil, fmt.Errorf("not a valid command: %v", commandData.Name)
 	}

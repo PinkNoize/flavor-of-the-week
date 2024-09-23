@@ -42,7 +42,10 @@ func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discord
 	_, err = activityDoc.Create(ctx, act)
 	if err != nil {
 		if status.Code(err) == codes.AlreadyExists {
-			return nil, fmt.Errorf("activity %v already exists", c.Name)
+			return &discordgo.WebhookParams{
+				Content: fmt.Sprintf("%v already exists in the pool", c.Name),
+				Flags:   discordgo.MessageFlagsEphemeral,
+			}, nil
 		}
 		return nil, fmt.Errorf("activityDoc.Create: %v", err)
 	}
