@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/PinkNoize/flavor-of-the-week/functions/command"
+	"github.com/bwmarrin/discordgo"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 )
 
@@ -19,16 +21,54 @@ type PubSubMessage struct {
 }
 
 func CommandPubSub(ctx context.Context, m PubSubMessage) error {
+	var err error
 	logger, slogger := zapLogger, zapSlogger
-	defer slogger.Sync()
-	defer logger.Sync()
+	defer func() {
+		err = errors.Join(slogger.Sync())
+		err = errors.Join(logger.Sync())
+	}()
 	ctx = ctxzap.ToContext(ctx, logger)
 
-	cmd, err := command.FromReader(ctx, bytes.NewReader(m.Data))
+	discordCmd, err := command.FromReader(ctx, bytes.NewReader(m.Data))
 	if err != nil {
 		return fmt.Errorf("error parsing command: %v", err)
 	}
-	cmd.LogCommand(ctx)
+	discordCmd.LogCommand(ctx)
+	ctx = discordCmd.ToContext(ctx)
+
+	var response *discordgo.WebhookParams = nil
+	defer func() {
+		ctxzap.Info(ctx, "Sending Interaction response")
+		discordSession, err := clientLoader.Discord()
+		if err != nil {
+			ctxzap.Error(ctx, fmt.Sprintf("Failed to initalize discord client: %v", err))
+			return
+		}
+		if response == nil {
+			response = &discordgo.WebhookParams{
+				Content: "Internal Error",
+				Flags:   discordgo.MessageFlagsEphemeral,
+			}
+		}
+		_, err = discordSession.FollowupMessageCreate(
+			discordCmd.Interaction(),
+			true,
+			response,
+		)
+		if err != nil {
+			ctxzap.Error(ctx, fmt.Sprintf("FollowupMessageCreate %v", err))
+			return
+		}
+	}()
+
+	cmd, err := discordCmd.ToCommand()
+	if err != nil {
+		return fmt.Errorf("converting to command: %v", err)
+	}
+	response, err = cmd.Execute(ctx, clientLoader)
+	if err != nil {
+		return fmt.Errorf("executing command: %v", err)
+	}
 
 	return nil
 }
