@@ -8,8 +8,9 @@ const (
 )
 
 type Activity struct {
-	Typ  ActivityType `firestore:"type"`
-	Name string       `firestore:"name"`
+	Typ         ActivityType `firestore:"type"`
+	Name        string       `firestore:"name"`
+	Nominations []string     `firestore:"nominations"`
 }
 
 func NewActivity(typ ActivityType, name string) *Activity {
