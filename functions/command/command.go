@@ -131,7 +131,10 @@ func (c *DiscordCommand) ToCommand() (Command, error) {
 			if ok {
 				name = nameOpt.StringValue()
 			}
-			return NewNominationListCommand(c.interaction.GuildID, c.interaction.User.ID, name), nil
+			if c.interaction.Member == nil {
+				return nil, fmt.Errorf("Member not found in interaction")
+			}
+			return NewNominationListCommand(c.interaction.GuildID, c.interaction.Member.User.ID, name), nil
 		default:
 			return nil, fmt.Errorf("not a valid command: %v", subcmd.Name)
 		}
