@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 
 	"github.com/PinkNoize/flavor-of-the-week/functions/activity"
@@ -30,8 +31,9 @@ func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discord
 	if err != nil {
 		return nil, err
 	}
+	docName := fmt.Sprintf("%x", sha256.Sum256([]byte(c.Name)))
 	var act *activity.Activity
-	activityDoc := firestoreClient.Collection(c.GuildID).Doc(c.Name)
+	activityDoc := firestoreClient.Collection(c.GuildID).Doc(docName)
 	switch c.ActivityType {
 	case "activity":
 		act = activity.NewActivity(activity.ACTIVITY, c.Name)
