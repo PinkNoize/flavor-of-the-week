@@ -128,7 +128,7 @@ func (c *DiscordCommand) ToCommand() (Command, error) {
 		case "list":
 			var name string
 			nameOpt, ok := args["name"]
-			if !ok {
+			if ok {
 				name = nameOpt.StringValue()
 			}
 			return NewNominationListCommand(c.interaction.GuildID, c.interaction.User.ID, name), nil
@@ -138,12 +138,12 @@ func (c *DiscordCommand) ToCommand() (Command, error) {
 	case "pool":
 		var name string
 		nameOpt, ok := args["name"]
-		if !ok {
+		if ok {
 			name = nameOpt.StringValue()
 		}
 		var actType string
 		actTypeOpt, ok := args["type"]
-		if !ok {
+		if ok {
 			actType = actTypeOpt.StringValue()
 		}
 		return NewPoolListCommand(c.interaction.GuildID, name, actType), nil
