@@ -50,6 +50,7 @@ func (c *DiscordCommand) LogCommand(ctx context.Context) {
 		zap.String("nick", c.UserNick()),
 		zap.String("userid", c.UserID()),
 		zap.String("command", command.Name),
+		zap.String("guildID", c.interaction.GuildID),
 		zap.Any("options", command.Options),
 	)
 }
