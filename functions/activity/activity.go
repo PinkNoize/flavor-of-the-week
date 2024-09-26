@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"slices"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -44,11 +45,10 @@ func (actErr *ActivityError) Error() string {
 	return string(actErr.Reason)
 }
 
-// TODO: Maybe change Nominations to an array
 type innerActivity struct {
-	Typ         ActivityType        `firestore:"type"`
-	Name        string              `firestore:"name"`
-	Nominations map[string]struct{} `firestore:"nominations"`
+	Typ         ActivityType `firestore:"type"`
+	Name        string       `firestore:"name"`
+	Nominations []string     `firestore:"nominations"`
 }
 
 type Activity struct {
@@ -130,15 +130,13 @@ func (act *Activity) AddNomination(ctx context.Context, userId string) error {
 	_, err := act.docRef.Update(ctx,
 		[]firestore.Update{
 			{
-				FieldPath: []string{"nominations", userId},
-				Value:     struct{}{},
+				FieldPath: firestore.FieldPath{"nominations"},
+				Value:     firestore.ArrayUnion(userId),
 			},
 		},
 	)
-	if act.inner.Nominations == nil {
-		act.inner.Nominations = map[string]struct{}{userId: {}}
-	} else {
-		act.inner.Nominations[userId] = struct{}{}
+	if !slices.Contains(act.inner.Nominations, userId) {
+		act.inner.Nominations = append(act.inner.Nominations, userId)
 	}
 	return err
 }
@@ -147,41 +145,58 @@ func (act *Activity) RemoveNomination(ctx context.Context, userId string) error 
 	_, err := act.docRef.Update(ctx,
 		[]firestore.Update{
 			{
-				FieldPath: []string{"nominations", userId},
-				Value:     firestore.Delete,
+				FieldPath: firestore.FieldPath{"nominations"},
+				Value:     firestore.ArrayRemove(userId),
 			},
 		},
 	)
-	delete(act.inner.Nominations, userId)
+	act.inner.Nominations = slices.DeleteFunc(act.inner.Nominations, func(cmp string) bool {
+		return cmp == userId
+	})
 	return err
 }
 
-func GetActivitiesPage(ctx context.Context, guildID, userID, name string, isNominations bool, pageNum int, cl *clients.Clients) ([]utils.GameEntry, bool, error) {
+func GetActivitiesPage(ctx context.Context, guildID, userID, name string, searchNominations bool, pageNum int, cl *clients.Clients) ([]utils.GameEntry, bool, error) {
+	// Shortcut to get entries if name is specified
+	if name != "" {
+		act, err := GetActivity(ctx, name, guildID, cl)
+		if err != nil {
+			ae, ok := err.(*ActivityError)
+			if ok && ae.Reason == DOES_NOT_EXIST {
+				return []utils.GameEntry{}, true, nil
+			}
+			return nil, false, fmt.Errorf("GetActivity: %v", err)
+		}
+		if !searchNominations || slices.Contains(act.inner.Nominations, userID) {
+			return []utils.GameEntry{
+				{
+					Name:        name,
+					Nominations: len(act.inner.Nominations),
+				},
+			}, true, nil
+		}
+		return []utils.GameEntry{}, true, nil
+	}
+
 	firestoreClient, err := cl.Firestore()
 	if err != nil {
 		return nil, false, err
 	}
 	activityDoc := firestoreClient.Collection(guildID)
+	// This query requires an index which is created in terraform??
 	query := activityDoc.Select("name", "nominations")
-	if isNominations {
-		query = query.WhereEntity(firestore.PropertyPathFilter{
-			Path:     firestore.FieldPath{"Nominations", userID},
-			Operator: "==",
-			Value:    struct{}{},
-		})
-	}
-	if name != "" {
+	if searchNominations {
 		query = query.WhereEntity(firestore.PropertyFilter{
-			Path:     "name",
-			Operator: "==",
-			Value:    name,
+			Path:     "nominations",
+			Operator: "array-contains",
+			Value:    userID,
 		})
 	}
 	iter := query.OrderBy("name", firestore.Asc).Offset(pageNum * PAGE_SIZE).Documents(ctx)
 	defer iter.Stop()
 
 	results := make([]utils.GameEntry, 0, PAGE_SIZE)
-	for {
+	for i := 0; i < PAGE_SIZE; i++ {
 		doc, err := iter.Next()
 		if err == iterator.Done {
 			break
