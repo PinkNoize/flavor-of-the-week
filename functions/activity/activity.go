@@ -126,7 +126,11 @@ func (act *Activity) AddNomination(ctx context.Context, userId string) error {
 			},
 		},
 	)
-	act.inner.Nominations["userId"] = struct{}{}
+	if act.inner.Nominations == nil {
+		act.inner.Nominations = map[string]struct{}{userId: {}}
+	} else {
+		act.inner.Nominations[userId] = struct{}{}
+	}
 	return err
 }
 
