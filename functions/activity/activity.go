@@ -116,3 +116,29 @@ func (act *Activity) RemoveActivity(ctx context.Context) error {
 	}
 	return nil
 }
+
+func (act *Activity) AddNomination(ctx context.Context, userId string) error {
+	_, err := act.docRef.Update(ctx,
+		[]firestore.Update{
+			{
+				FieldPath: []string{"nominations", userId},
+				Value:     struct{}{},
+			},
+		},
+	)
+	act.inner.Nominations["userId"] = struct{}{}
+	return err
+}
+
+func (act *Activity) RemoveNomination(ctx context.Context, userId string) error {
+	_, err := act.docRef.Update(ctx,
+		[]firestore.Update{
+			{
+				FieldPath: []string{"nominations", userId},
+				Value:     firestore.Delete,
+			},
+		},
+	)
+	delete(act.inner.Nominations, userId)
+	return err
+}

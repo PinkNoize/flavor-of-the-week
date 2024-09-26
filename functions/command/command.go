@@ -120,12 +120,12 @@ func (c *DiscordCommand) ToCommand() (Command, error) {
 			if pass, missing := verifyOpts(subcmd_args, []string{"name"}); !pass {
 				return nil, fmt.Errorf("missing options: %v", missing)
 			}
-			return NewNominationAddCommand(c.interaction.GuildID, subcmd_args["name"].StringValue()), nil
+			return NewNominationAddCommand(c.interaction.GuildID, c.UserID(), subcmd_args["name"].StringValue()), nil
 		case "remove":
 			if pass, missing := verifyOpts(subcmd_args, []string{"name"}); !pass {
 				return nil, fmt.Errorf("missing options: %v", missing)
 			}
-			return NewNominationAddCommand(c.interaction.GuildID, subcmd_args["name"].StringValue()), nil
+			return NewNominationRemoveCommand(c.interaction.GuildID, c.UserID(), subcmd_args["name"].StringValue()), nil
 		case "list":
 			var name string
 			nameOpt, ok := args["name"]
