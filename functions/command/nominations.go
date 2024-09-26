@@ -6,6 +6,7 @@ import (
 
 	"github.com/PinkNoize/flavor-of-the-week/functions/activity"
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
+	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -85,20 +86,22 @@ type NominationListCommand struct {
 	GuildID string
 	UserID  string
 	Name    string
+	Page    int
 }
 
-func NewNominationListCommand(guildID, userID, name string) *NominationListCommand {
+func NewNominationListCommand(guildID, userID, name string, page int) *NominationListCommand {
 	return &NominationListCommand{
 		GuildID: guildID,
 		UserID:  userID,
 		Name:    name,
+		Page:    page,
 	}
 }
 
 func (c *NominationListCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookParams, error) {
-	// TODO
-	return &discordgo.WebhookParams{
-		Content: "🚧 Command not implemented yet",
-		Flags:   discordgo.MessageFlagsEphemeral,
-	}, nil
+	entries, lastPage, err := activity.GetActivitiesPage(ctx, c.GuildID, c.UserID, c.Name, true, c.Page, cl)
+	if err != nil {
+		return nil, fmt.Errorf("GetActivitesPage: %v", err)
+	}
+	return utils.BuildDiscordPage(entries, "nominations", c.Page, lastPage), nil
 }

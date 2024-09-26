@@ -8,10 +8,14 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
+	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
+	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+const PAGE_SIZE int = 5
 
 type ActivityType string
 
@@ -40,6 +44,7 @@ func (actErr *ActivityError) Error() string {
 	return string(actErr.Reason)
 }
 
+// TODO: Maybe change Nominations to an array
 type innerActivity struct {
 	Typ         ActivityType        `firestore:"type"`
 	Name        string              `firestore:"name"`
@@ -58,7 +63,7 @@ func GetActivity(ctx context.Context, name, guildID string, cl *clients.Clients)
 	if err != nil {
 		return nil, err
 	}
-	docName := fmt.Sprintf("%x", sha256.Sum256([]byte(name)))
+	docName := generateName(name)
 	activityDoc := firestoreClient.Collection(guildID).Doc(docName)
 	activityDocSnap, err := activityDoc.Get(ctx)
 	if err != nil {
@@ -79,12 +84,16 @@ func GetActivity(ctx context.Context, name, guildID string, cl *clients.Clients)
 	return &act, nil
 }
 
+func generateName(name string) string {
+	return fmt.Sprintf("%x", sha256.Sum256([]byte(name)))
+}
+
 func Create(ctx context.Context, typ ActivityType, name, guildID string, cl *clients.Clients) (*Activity, error) {
 	firestoreClient, err := cl.Firestore()
 	if err != nil {
 		return nil, err
 	}
-	docName := fmt.Sprintf("%x", sha256.Sum256([]byte(name)))
+	docName := generateName(name)
 	activityDoc := firestoreClient.Collection(guildID).Doc(docName)
 	inAct := innerActivity{
 		Typ:  typ,
@@ -145,4 +154,58 @@ func (act *Activity) RemoveNomination(ctx context.Context, userId string) error 
 	)
 	delete(act.inner.Nominations, userId)
 	return err
+}
+
+func GetActivitiesPage(ctx context.Context, guildID, userID, name string, isNominations bool, pageNum int, cl *clients.Clients) ([]utils.GameEntry, bool, error) {
+	firestoreClient, err := cl.Firestore()
+	if err != nil {
+		return nil, false, err
+	}
+	activityDoc := firestoreClient.Collection(guildID)
+	query := activityDoc.Select("name", "nominations")
+	if isNominations {
+		query = query.WhereEntity(firestore.PropertyPathFilter{
+			Path:     firestore.FieldPath{"Nominations", userID},
+			Operator: "==",
+			Value:    struct{}{},
+		})
+	}
+	if name != "" {
+		query = query.WhereEntity(firestore.PropertyFilter{
+			Path:     "name",
+			Operator: "==",
+			Value:    name,
+		})
+	}
+	iter := query.OrderBy("name", firestore.Asc).Offset(pageNum * PAGE_SIZE).Documents(ctx)
+	defer iter.Stop()
+
+	results := make([]utils.GameEntry, 0, PAGE_SIZE)
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, false, fmt.Errorf("iter.Next: %v", err)
+		}
+		var inAct innerActivity
+		err = doc.DataTo(&inAct)
+		if err != nil {
+			return nil, false, fmt.Errorf("doc.DataTo: %v", err)
+		}
+		results = append(results, utils.GameEntry{
+			Name:        inAct.Name,
+			Nominations: len(inAct.Nominations),
+		})
+	}
+	lastItem := false
+	_, err = iter.Next()
+	if err != nil {
+		if err == iterator.Done {
+			lastItem = true
+		}
+	}
+	return results, lastItem, nil
+
 }
