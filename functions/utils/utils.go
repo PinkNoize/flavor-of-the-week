@@ -24,7 +24,7 @@ func BuildDiscordPage(gameEntries []GameEntry, listType string, currentPage int,
 	prevPageNum := max(currentPage-1, 0)
 	nextPageNum := currentPage + 1
 
-	pageTitle := fmt.Sprintf("**Page %v**", currentPage)
+	pageTitle := fmt.Sprintf("**Page %v**", currentPage+1)
 	return &discordgo.WebhookEdit{
 		Content: &pageTitle,
 		Embeds:  &embeds,
