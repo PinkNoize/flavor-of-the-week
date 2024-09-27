@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
+	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -17,15 +18,9 @@ func NewStartPollCommand(guildID string) *StartPollCommand {
 	}
 }
 
-func (c *StartPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.InteractionResponse, error) {
+func (c *StartPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookEdit, error) {
 	// TODO
-	return &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: "🚧 Command not implemented yet",
-			Flags:   discordgo.MessageFlagsEphemeral,
-		},
-	}, nil
+	return utils.NewWebhookEdit("🚧 Command not implemented yet"), nil
 }
 
 type SetPollChannelCommand struct {
@@ -40,13 +35,7 @@ func NewSetPollChannelCommand(guildID string, channel *discordgo.Channel) *SetPo
 	}
 }
 
-func (c *SetPollChannelCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.InteractionResponse, error) {
+func (c *SetPollChannelCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookEdit, error) {
 	// TODO
-	return &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: "🚧 Command not implemented yet",
-			Flags:   discordgo.MessageFlagsEphemeral,
-		},
-	}, nil
+	return utils.NewWebhookEdit("🚧 Command not implemented yet"), nil
 }

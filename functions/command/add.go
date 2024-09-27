@@ -6,6 +6,7 @@ import (
 
 	"github.com/PinkNoize/flavor-of-the-week/functions/activity"
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
+	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -23,7 +24,7 @@ func NewAddCommand(guildID, activityType, name string) *AddCommand {
 	}
 }
 
-func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.InteractionResponse, error) {
+func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookEdit, error) {
 	var typ activity.ActivityType
 	switch c.ActivityType {
 	case "activity":
@@ -37,22 +38,10 @@ func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discord
 		ae, ok := err.(*activity.ActivityError)
 		if ok {
 			if ae.Reason == activity.ALREADY_EXISTS {
-				return &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: fmt.Sprintf("%v already exists in the pool", c.Name),
-						Flags:   discordgo.MessageFlagsEphemeral,
-					},
-				}, nil
+				return utils.NewWebhookEdit(fmt.Sprintf("%v already exists in the pool", c.Name)), nil
 			}
 		}
 		return nil, fmt.Errorf("act.Create: %v", err)
 	}
-	return &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: fmt.Sprintf("%v added to the pool", c.Name),
-			Flags:   discordgo.MessageFlagsEphemeral,
-		},
-	}, nil
+	return utils.NewWebhookEdit(fmt.Sprintf("%v added to the pool", c.Name)), nil
 }
