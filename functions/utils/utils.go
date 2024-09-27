@@ -21,17 +21,17 @@ func BuildDiscordPage(gameEntries []GameEntry, listType string, currentPage int,
 		})
 	}
 
-	// prevPageNum := max(currentPage-1, 0)
-	// prevPageLabel := ""
-	// if currentPage != 0 {
-	// 	prevPageLabel = fmt.Sprintf("%v", prevPageNum)
-	// }
+	prevPageNum := max(currentPage-1, 0)
+	prevPageLabel := " "
+	if currentPage != 0 {
+		prevPageLabel = fmt.Sprintf("%v", prevPageNum)
+	}
 
-	// nextPageNum := currentPage + 1
-	// nextPageLabel := ""
-	// if !isLastPage {
-	// 	nextPageLabel = fmt.Sprintf("%v", nextPageNum)
-	// }
+	nextPageNum := currentPage + 1
+	nextPageLabel := " "
+	if !isLastPage {
+		nextPageLabel = fmt.Sprintf("%v", nextPageNum)
+	}
 
 	pageTitle := fmt.Sprintf("**Page %v**", currentPage)
 	return &discordgo.WebhookEdit{
@@ -41,23 +41,17 @@ func BuildDiscordPage(gameEntries []GameEntry, listType string, currentPage int,
 			discordgo.ActionsRow{
 				Components: []discordgo.MessageComponent{
 					discordgo.Button{
-						Label:    "Test button",
+						Label:    prevPageLabel,
 						Style:    discordgo.SecondaryButton,
-						Disabled: true,
-						CustomID: "test",
+						Disabled: currentPage == 0,
+						CustomID: fmt.Sprintf("%v:%v", listType, prevPageNum),
 					},
-					// 			discordgo.Button{
-					// 				Label:    prevPageLabel,
-					// 				Style:    discordgo.SecondaryButton,
-					// 				Disabled: currentPage == 0,
-					// 				CustomID: fmt.Sprintf("%v: %v", listType, prevPageNum),
-					// 			},
-					// 			discordgo.Button{
-					// 				Label:    nextPageLabel,
-					// 				Style:    discordgo.SecondaryButton,
-					// 				Disabled: isLastPage,
-					// 				CustomID: fmt.Sprintf("%v: %v", listType, nextPageNum),
-					// 			},
+					discordgo.Button{
+						Label:    nextPageLabel,
+						Style:    discordgo.SecondaryButton,
+						Disabled: isLastPage,
+						CustomID: fmt.Sprintf("%v:%v", listType, nextPageNum),
+					},
 				},
 			},
 		},
