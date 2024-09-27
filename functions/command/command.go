@@ -50,6 +50,7 @@ func (c *DiscordCommand) LogCommand(ctx context.Context) {
 		zap.String("nick", c.UserNick()),
 		zap.String("userid", c.UserID()),
 		zap.String("command", command.Name),
+		zap.String("guildID", c.interaction.GuildID),
 		zap.Any("options", command.Options),
 	)
 }
@@ -119,37 +120,39 @@ func (c *DiscordCommand) ToCommand() (Command, error) {
 			if pass, missing := verifyOpts(subcmd_args, []string{"name"}); !pass {
 				return nil, fmt.Errorf("missing options: %v", missing)
 			}
-			return NewNominationAddCommand(c.interaction.GuildID, subcmd_args["name"].StringValue()), nil
+			return NewNominationAddCommand(c.interaction.GuildID, c.UserID(), subcmd_args["name"].StringValue()), nil
 		case "remove":
 			if pass, missing := verifyOpts(subcmd_args, []string{"name"}); !pass {
 				return nil, fmt.Errorf("missing options: %v", missing)
 			}
-			return NewNominationAddCommand(c.interaction.GuildID, subcmd_args["name"].StringValue()), nil
+			return NewNominationRemoveCommand(c.interaction.GuildID, c.UserID(), subcmd_args["name"].StringValue()), nil
 		case "list":
 			var name string
-			nameOpt, ok := args["name"]
+			nameOpt, ok := subcmd_args["name"]
 			if ok {
 				name = nameOpt.StringValue()
 			}
 			if c.interaction.Member == nil {
 				return nil, fmt.Errorf("Member not found in interaction")
 			}
-			return NewNominationListCommand(c.interaction.GuildID, c.interaction.Member.User.ID, name), nil
+			return NewNominationListCommand(c.interaction.GuildID, c.interaction.Member.User.ID, name, 0), nil
 		default:
 			return nil, fmt.Errorf("not a valid command: %v", subcmd.Name)
 		}
 	case "pool":
+		subcmd := commandData.Options[0]
+		subcmd_args := optionsToMap(subcmd.Options)
 		var name string
-		nameOpt, ok := args["name"]
+		nameOpt, ok := subcmd_args["name"]
 		if ok {
 			name = nameOpt.StringValue()
 		}
 		var actType string
-		actTypeOpt, ok := args["type"]
+		actTypeOpt, ok := subcmd_args["type"]
 		if ok {
 			actType = actTypeOpt.StringValue()
 		}
-		return NewPoolListCommand(c.interaction.GuildID, name, actType), nil
+		return NewPoolListCommand(c.interaction.GuildID, name, actType, 0), nil
 	case "start-poll":
 		return NewStartPollCommand(c.interaction.GuildID), nil
 	case "poll-channel":
@@ -183,5 +186,5 @@ func verifyOpts(opts map[string]*discordgo.ApplicationCommandInteractionDataOpti
 }
 
 type Command interface {
-	Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookParams, error)
+	Execute(ctx context.Context, cl *clients.Clients) (*discordgo.InteractionResponse, error)
 }

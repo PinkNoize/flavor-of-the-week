@@ -36,7 +36,7 @@ func CommandPubSub(ctx context.Context, m PubSubMessage) error {
 	discordCmd.LogCommand(ctx)
 	ctx = discordCmd.ToContext(ctx)
 
-	var response *discordgo.WebhookParams = nil
+	var response *discordgo.InteractionResponse = nil
 	defer func() {
 		ctxzap.Info(ctx, "Sending Interaction response")
 		discordSession, err := clientLoader.Discord()
@@ -45,18 +45,17 @@ func CommandPubSub(ctx context.Context, m PubSubMessage) error {
 			return
 		}
 		if response == nil {
-			response = &discordgo.WebhookParams{
-				Content: "Internal Error",
-				Flags:   discordgo.MessageFlagsEphemeral,
+			response = &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Internal Error",
+					Flags:   discordgo.MessageFlagsEphemeral,
+				},
 			}
 		}
-		_, err = discordSession.FollowupMessageCreate(
-			discordCmd.Interaction(),
-			true,
-			response,
-		)
+		err = discordSession.InteractionRespond(discordCmd.Interaction(), response)
 		if err != nil {
-			ctxzap.Error(ctx, fmt.Sprintf("FollowupMessageCreate %v", err))
+			ctxzap.Error(ctx, fmt.Sprintf("InteractionRespond %v", err))
 			return
 		}
 	}()
