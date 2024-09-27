@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
-	"go.uber.org/zap"
 )
 
 type GameEntry struct {
@@ -22,41 +21,40 @@ func BuildDiscordPage(gameEntries []GameEntry, listType string, currentPage int,
 		})
 	}
 
-	prevPageNum := max(currentPage-1, 0)
-	prevPageLabel := ""
-	if currentPage != 0 {
-		prevPageLabel = fmt.Sprintf("%v", prevPageNum)
-	}
+	// prevPageNum := max(currentPage-1, 0)
+	// prevPageLabel := ""
+	// if currentPage != 0 {
+	// 	prevPageLabel = fmt.Sprintf("%v", prevPageNum)
+	// }
 
-	nextPageNum := currentPage + 1
-	nextPageLabel := ""
-	if !isLastPage {
-		nextPageLabel = fmt.Sprintf("%v", nextPageNum)
-	}
+	// nextPageNum := currentPage + 1
+	// nextPageLabel := ""
+	// if !isLastPage {
+	// 	nextPageLabel = fmt.Sprintf("%v", nextPageNum)
+	// }
 
-	zap.S().Debug(fmt.Sprintf("Embeds: %v", len(embeds)))
 	pageTitle := fmt.Sprintf("**Page %v**", currentPage)
 	return &discordgo.WebhookEdit{
 		Content: &pageTitle,
-		// Embeds:  &embeds,
-		Components: &[]discordgo.MessageComponent{
-			discordgo.ActionsRow{
-				Components: []discordgo.MessageComponent{
-					discordgo.Button{
-						Label:    prevPageLabel,
-						Style:    discordgo.SecondaryButton,
-						Disabled: currentPage == 0,
-						CustomID: fmt.Sprintf("%v: %v", listType, prevPageNum),
-					},
-					discordgo.Button{
-						Label:    nextPageLabel,
-						Style:    discordgo.SecondaryButton,
-						Disabled: isLastPage,
-						CustomID: fmt.Sprintf("%v: %v", listType, nextPageNum),
-					},
-				},
-			},
-		},
+		Embeds:  &embeds,
+		// Components: &[]discordgo.MessageComponent{
+		// 	discordgo.ActionsRow{
+		// 		Components: []discordgo.MessageComponent{
+		// 			discordgo.Button{
+		// 				Label:    prevPageLabel,
+		// 				Style:    discordgo.SecondaryButton,
+		// 				Disabled: currentPage == 0,
+		// 				CustomID: fmt.Sprintf("%v: %v", listType, prevPageNum),
+		// 			},
+		// 			discordgo.Button{
+		// 				Label:    nextPageLabel,
+		// 				Style:    discordgo.SecondaryButton,
+		// 				Disabled: isLastPage,
+		// 				CustomID: fmt.Sprintf("%v: %v", listType, nextPageNum),
+		// 			},
+		// 		},
+		// 	},
+		// },
 	}
 }
 
