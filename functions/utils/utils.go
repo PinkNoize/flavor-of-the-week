@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
+	"go.uber.org/zap"
 )
 
 type GameEntry struct {
@@ -33,10 +34,11 @@ func BuildDiscordPage(gameEntries []GameEntry, listType string, currentPage int,
 		nextPageLabel = fmt.Sprintf("%v", nextPageNum)
 	}
 
+	zap.S().Debug(fmt.Sprintf("Embeds: %v", len(embeds)))
 	pageTitle := fmt.Sprintf("**Page %v**", currentPage)
 	return &discordgo.WebhookEdit{
 		Content: &pageTitle,
-		Embeds:  &embeds,
+		// Embeds:  &embeds,
 		Components: &[]discordgo.MessageComponent{
 			discordgo.ActionsRow{
 				Components: []discordgo.MessageComponent{

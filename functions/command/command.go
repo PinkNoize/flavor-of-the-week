@@ -140,15 +140,13 @@ func (c *DiscordCommand) ToCommand() (Command, error) {
 			return nil, fmt.Errorf("not a valid command: %v", subcmd.Name)
 		}
 	case "pool":
-		subcmd := commandData.Options[0]
-		subcmd_args := optionsToMap(subcmd.Options)
 		var name string
-		nameOpt, ok := subcmd_args["name"]
+		nameOpt, ok := args["name"]
 		if ok {
 			name = nameOpt.StringValue()
 		}
 		var actType string
-		actTypeOpt, ok := subcmd_args["type"]
+		actTypeOpt, ok := args["type"]
 		if ok {
 			actType = actTypeOpt.StringValue()
 		}
