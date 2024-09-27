@@ -11,7 +11,7 @@ type GameEntry struct {
 	Nominations int
 }
 
-func BuildDiscordPage(gameEntries []GameEntry, listType string, currentPage int, isLastPage bool) *discordgo.InteractionResponse {
+func BuildDiscordPage(gameEntries []GameEntry, listType string, currentPage int, isLastPage bool) *discordgo.WebhookEdit {
 	embeds := make([]*discordgo.MessageEmbed, 0, len(gameEntries))
 	for _, ent := range gameEntries {
 		embeds = append(embeds, &discordgo.MessageEmbed{
@@ -33,30 +33,33 @@ func BuildDiscordPage(gameEntries []GameEntry, listType string, currentPage int,
 		nextPageLabel = fmt.Sprintf("%v", nextPageNum)
 	}
 
-	return &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: fmt.Sprintf("**Page %v**", currentPage),
-			Embeds:  embeds,
-			Components: []discordgo.MessageComponent{
-				discordgo.ActionsRow{
-					Components: []discordgo.MessageComponent{
-						discordgo.Button{
-							Label:    prevPageLabel,
-							Style:    discordgo.SecondaryButton,
-							Disabled: currentPage == 0,
-							CustomID: fmt.Sprintf("%v: %v", listType, prevPageNum),
-						},
-						discordgo.Button{
-							Label:    nextPageLabel,
-							Style:    discordgo.SecondaryButton,
-							Disabled: isLastPage,
-							CustomID: fmt.Sprintf("%v: %v", listType, nextPageNum),
-						},
+	pageTitle := fmt.Sprintf("**Page %v**", currentPage)
+	return &discordgo.WebhookEdit{
+		Content: &pageTitle,
+		Embeds:  &embeds,
+		Components: &[]discordgo.MessageComponent{
+			discordgo.ActionsRow{
+				Components: []discordgo.MessageComponent{
+					discordgo.Button{
+						Label:    prevPageLabel,
+						Style:    discordgo.SecondaryButton,
+						Disabled: currentPage == 0,
+						CustomID: fmt.Sprintf("%v: %v", listType, prevPageNum),
+					},
+					discordgo.Button{
+						Label:    nextPageLabel,
+						Style:    discordgo.SecondaryButton,
+						Disabled: isLastPage,
+						CustomID: fmt.Sprintf("%v: %v", listType, nextPageNum),
 					},
 				},
 			},
-			Flags: discordgo.MessageFlagsEphemeral,
 		},
+	}
+}
+
+func NewWebhookEdit(content string) *discordgo.WebhookEdit {
+	return &discordgo.WebhookEdit{
+		Content: &content,
 	}
 }

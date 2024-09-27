@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/PinkNoize/flavor-of-the-week/functions/command"
+	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
 	"github.com/bwmarrin/discordgo"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 )
@@ -36,7 +37,7 @@ func CommandPubSub(ctx context.Context, m PubSubMessage) error {
 	discordCmd.LogCommand(ctx)
 	ctx = discordCmd.ToContext(ctx)
 
-	var response *discordgo.InteractionResponse = nil
+	var response *discordgo.WebhookEdit = nil
 	defer func() {
 		ctxzap.Info(ctx, "Sending Interaction response")
 		discordSession, err := clientLoader.Discord()
@@ -45,15 +46,9 @@ func CommandPubSub(ctx context.Context, m PubSubMessage) error {
 			return
 		}
 		if response == nil {
-			response = &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: "Internal Error",
-					Flags:   discordgo.MessageFlagsEphemeral,
-				},
-			}
+			response = utils.NewWebhookEdit("Internal Error")
 		}
-		err = discordSession.InteractionRespond(discordCmd.Interaction(), response)
+		_, err = discordSession.InteractionResponseEdit(discordCmd.Interaction(), response)
 		if err != nil {
 			ctxzap.Error(ctx, fmt.Sprintf("InteractionRespond %v", err))
 			return
