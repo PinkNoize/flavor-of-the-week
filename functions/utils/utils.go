@@ -38,28 +38,28 @@ func BuildDiscordPage(gameEntries []GameEntry, listType string, currentPage int,
 		Content: &pageTitle,
 		Embeds:  &embeds,
 		Components: &[]discordgo.MessageComponent{
-			discordgo.Button{
-				Label:    "Test button",
-				Style:    discordgo.SecondaryButton,
-				Disabled: false,
-				CustomID: "test",
+			discordgo.ActionsRow{
+				Components: []discordgo.MessageComponent{
+					discordgo.Button{
+						Label:    "Test button",
+						Style:    discordgo.SecondaryButton,
+						Disabled: false,
+						CustomID: "test",
+					},
+					// 			discordgo.Button{
+					// 				Label:    prevPageLabel,
+					// 				Style:    discordgo.SecondaryButton,
+					// 				Disabled: currentPage == 0,
+					// 				CustomID: fmt.Sprintf("%v: %v", listType, prevPageNum),
+					// 			},
+					// 			discordgo.Button{
+					// 				Label:    nextPageLabel,
+					// 				Style:    discordgo.SecondaryButton,
+					// 				Disabled: isLastPage,
+					// 				CustomID: fmt.Sprintf("%v: %v", listType, nextPageNum),
+					// 			},
+				},
 			},
-			// 	discordgo.ActionsRow{
-			// 		Components: []discordgo.MessageComponent{
-			// 			discordgo.Button{
-			// 				Label:    prevPageLabel,
-			// 				Style:    discordgo.SecondaryButton,
-			// 				Disabled: currentPage == 0,
-			// 				CustomID: fmt.Sprintf("%v: %v", listType, prevPageNum),
-			// 			},
-			// 			discordgo.Button{
-			// 				Label:    nextPageLabel,
-			// 				Style:    discordgo.SecondaryButton,
-			// 				Disabled: isLastPage,
-			// 				CustomID: fmt.Sprintf("%v: %v", listType, nextPageNum),
-			// 			},
-			// 		},
-			// 	},
 		},
 	}
 }
