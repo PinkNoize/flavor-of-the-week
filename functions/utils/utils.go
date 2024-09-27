@@ -15,6 +15,7 @@ func BuildDiscordPage(gameEntries []GameEntry, listType string, currentPage int,
 	embeds := make([]*discordgo.MessageEmbed, 0, len(gameEntries))
 	for _, ent := range gameEntries {
 		embeds = append(embeds, &discordgo.MessageEmbed{
+			Type:        discordgo.EmbedTypeRich,
 			Title:       ent.Name,
 			Description: fmt.Sprintf("Nominations: %v", ent.Nominations),
 		})
