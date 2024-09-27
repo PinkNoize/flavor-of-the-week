@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/dimuska139/rawg-sdk-go"
 )
 
 func Ptr[T any](v T) *T {
@@ -197,4 +199,22 @@ func main() {
 	if err != nil {
 		log.Fatalf("ApplicationCommandBulkOverwrite: %v", err)
 	}
+
+	config := rawg.Config{
+		ApiKey:   "66dbcbcf75a348a0977292ad3513592d", // Your personal API key (see https://rawg.io/apidocs)
+		Language: "en",
+		Rps:      5,
+	}
+	client := rawg.NewClient(http.DefaultClient, &config)
+
+	filter := rawg.NewGamesFilter().
+		SetSearch("Gta5").
+		SetPage(1).
+		SetPageSize(10).
+		ExcludeCollection(1).
+		WithoutParents()
+
+	data, total, err := client.GetGames(filter)
+	fmt.Println(data)
+	fmt.Println(total)
 }
