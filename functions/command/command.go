@@ -128,7 +128,7 @@ func (c *DiscordCommand) ToCommand() (Command, error) {
 			return NewNominationRemoveCommand(c.interaction.GuildID, c.UserID(), subcmd_args["name"].StringValue()), nil
 		case "list":
 			var name string
-			nameOpt, ok := args["name"]
+			nameOpt, ok := subcmd_args["name"]
 			if ok {
 				name = nameOpt.StringValue()
 			}
@@ -140,17 +140,19 @@ func (c *DiscordCommand) ToCommand() (Command, error) {
 			return nil, fmt.Errorf("not a valid command: %v", subcmd.Name)
 		}
 	case "pool":
+		subcmd := commandData.Options[0]
+		subcmd_args := optionsToMap(subcmd.Options)
 		var name string
-		nameOpt, ok := args["name"]
+		nameOpt, ok := subcmd_args["name"]
 		if ok {
 			name = nameOpt.StringValue()
 		}
 		var actType string
-		actTypeOpt, ok := args["type"]
+		actTypeOpt, ok := subcmd_args["type"]
 		if ok {
 			actType = actTypeOpt.StringValue()
 		}
-		return NewPoolListCommand(c.interaction.GuildID, name, actType), nil
+		return NewPoolListCommand(c.interaction.GuildID, name, actType, 0), nil
 	case "start-poll":
 		return NewStartPollCommand(c.interaction.GuildID), nil
 	case "poll-channel":

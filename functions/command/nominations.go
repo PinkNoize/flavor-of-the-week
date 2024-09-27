@@ -99,7 +99,11 @@ func NewNominationListCommand(guildID, userID, name string, page int) *Nominatio
 }
 
 func (c *NominationListCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookParams, error) {
-	entries, lastPage, err := activity.GetActivitiesPage(ctx, c.GuildID, c.UserID, c.Name, true, c.Page, cl)
+	entries, lastPage, err := activity.GetActivitiesPage(ctx, c.GuildID, c.Page, &activity.ActivitesPageOptions{
+		Name:            c.Name,
+		NominationsOnly: true,
+		UserId:          c.UserID,
+	}, cl)
 	if err != nil {
 		return nil, fmt.Errorf("GetActivitesPage: %v", err)
 	}

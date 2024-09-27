@@ -76,10 +76,10 @@ func GetActivity(ctx context.Context, name, guildID string, cl *clients.Clients)
 	activityDoc := activityCollection.Doc(docName)
 	activityDocSnap, err := activityDoc.Get(ctx)
 	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, NewActivityError(DOES_NOT_EXIST)
+		}
 		return nil, err
-	}
-	if !activityDocSnap.Exists() {
-		return nil, NewActivityError(DOES_NOT_EXIST)
 	}
 	act := Activity{
 		docName:    docName,
@@ -167,10 +167,17 @@ func (act *Activity) RemoveNomination(ctx context.Context, userId string) error 
 	return err
 }
 
-func GetActivitiesPage(ctx context.Context, guildID, userID, name string, searchNominations bool, pageNum int, cl *clients.Clients) ([]utils.GameEntry, bool, error) {
+type ActivitesPageOptions struct {
+	Name            string
+	Type            ActivityType
+	NominationsOnly bool
+	UserId          string
+}
+
+func GetActivitiesPage(ctx context.Context, guildID string, pageNum int, opts *ActivitesPageOptions, cl *clients.Clients) ([]utils.GameEntry, bool, error) {
 	// Shortcut to get entries if name is specified
-	if name != "" {
-		act, err := GetActivity(ctx, name, guildID, cl)
+	if opts.Name != "" {
+		act, err := GetActivity(ctx, opts.Name, guildID, cl)
 		if err != nil {
 			ae, ok := err.(*ActivityError)
 			if ok && ae.Reason == DOES_NOT_EXIST {
@@ -178,10 +185,10 @@ func GetActivitiesPage(ctx context.Context, guildID, userID, name string, search
 			}
 			return nil, false, fmt.Errorf("GetActivity: %v", err)
 		}
-		if !searchNominations || slices.Contains(act.inner.Nominations, userID) {
+		if !opts.NominationsOnly || slices.Contains(act.inner.Nominations, opts.UserId) {
 			return []utils.GameEntry{
 				{
-					Name:        name,
+					Name:        opts.Name,
 					Nominations: len(act.inner.Nominations),
 				},
 			}, true, nil
@@ -199,11 +206,18 @@ func GetActivitiesPage(ctx context.Context, guildID, userID, name string, search
 		Operator: "==",
 		Value:    guildID,
 	})
-	if searchNominations {
+	if opts.NominationsOnly {
 		query = query.WhereEntity(firestore.PropertyFilter{
 			Path:     "nominations",
 			Operator: "array-contains",
-			Value:    userID,
+			Value:    opts.UserId,
+		})
+	}
+	if opts.Type != "" {
+		query = query.WhereEntity(firestore.PropertyFilter{
+			Path:     "type",
+			Operator: "==",
+			Value:    opts.Type,
 		})
 	}
 	iter := query.OrderBy("name", firestore.Asc).Offset(pageNum * PAGE_SIZE).Documents(ctx)
