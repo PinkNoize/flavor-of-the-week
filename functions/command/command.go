@@ -186,5 +186,5 @@ func verifyOpts(opts map[string]*discordgo.ApplicationCommandInteractionDataOpti
 }
 
 type Command interface {
-	Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookParams, error)
+	Execute(ctx context.Context, cl *clients.Clients) (*discordgo.InteractionResponse, error)
 }

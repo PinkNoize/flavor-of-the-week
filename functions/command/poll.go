@@ -17,11 +17,14 @@ func NewStartPollCommand(guildID string) *StartPollCommand {
 	}
 }
 
-func (c *StartPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookParams, error) {
+func (c *StartPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.InteractionResponse, error) {
 	// TODO
-	return &discordgo.WebhookParams{
-		Content: "🚧 Command not implemented yet",
-		Flags:   discordgo.MessageFlagsEphemeral,
+	return &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: "🚧 Command not implemented yet",
+			Flags:   discordgo.MessageFlagsEphemeral,
+		},
 	}, nil
 }
 
@@ -37,10 +40,13 @@ func NewSetPollChannelCommand(guildID string, channel *discordgo.Channel) *SetPo
 	}
 }
 
-func (c *SetPollChannelCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookParams, error) {
+func (c *SetPollChannelCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.InteractionResponse, error) {
 	// TODO
-	return &discordgo.WebhookParams{
-		Content: "🚧 Command not implemented yet",
-		Flags:   discordgo.MessageFlagsEphemeral,
+	return &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: "🚧 Command not implemented yet",
+			Flags:   discordgo.MessageFlagsEphemeral,
+		},
 	}, nil
 }

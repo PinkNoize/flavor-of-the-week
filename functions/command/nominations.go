@@ -24,14 +24,17 @@ func NewNominationAddCommand(guildID, userID, name string) *NominationAddCommand
 	}
 }
 
-func (c *NominationAddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookParams, error) {
+func (c *NominationAddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.InteractionResponse, error) {
 	act, err := activity.GetActivity(ctx, c.Name, c.GuildID, cl)
 	if err != nil {
 		ae, ok := err.(*activity.ActivityError)
 		if ok && ae.Reason == activity.DOES_NOT_EXIST {
-			return &discordgo.WebhookParams{
-				Content: fmt.Sprintf("%v does not exist", c.Name),
-				Flags:   discordgo.MessageFlagsEphemeral,
+			return &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: fmt.Sprintf("%v does not exist", c.Name),
+					Flags:   discordgo.MessageFlagsEphemeral,
+				},
 			}, nil
 		}
 		return nil, err
@@ -40,9 +43,12 @@ func (c *NominationAddCommand) Execute(ctx context.Context, cl *clients.Clients)
 	if err != nil {
 		return nil, fmt.Errorf("act.AddNomination: %v", err)
 	}
-	return &discordgo.WebhookParams{
-		Content: fmt.Sprintf("Added a nomination for %v", c.Name),
-		Flags:   discordgo.MessageFlagsEphemeral,
+	return &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: fmt.Sprintf("Added a nomination for %v", c.Name),
+			Flags:   discordgo.MessageFlagsEphemeral,
+		},
 	}, nil
 }
 
@@ -60,14 +66,17 @@ func NewNominationRemoveCommand(guildID, userID, name string) *NominationRemoveC
 	}
 }
 
-func (c *NominationRemoveCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookParams, error) {
+func (c *NominationRemoveCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.InteractionResponse, error) {
 	act, err := activity.GetActivity(ctx, c.Name, c.GuildID, cl)
 	if err != nil {
 		ae, ok := err.(*activity.ActivityError)
 		if ok && ae.Reason == activity.DOES_NOT_EXIST {
-			return &discordgo.WebhookParams{
-				Content: fmt.Sprintf("%v does not exist", c.Name),
-				Flags:   discordgo.MessageFlagsEphemeral,
+			return &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: fmt.Sprintf("%v does not exist", c.Name),
+					Flags:   discordgo.MessageFlagsEphemeral,
+				},
 			}, nil
 		}
 		return nil, err
@@ -76,9 +85,12 @@ func (c *NominationRemoveCommand) Execute(ctx context.Context, cl *clients.Clien
 	if err != nil {
 		return nil, fmt.Errorf("act.RemoveNomination: %v", err)
 	}
-	return &discordgo.WebhookParams{
-		Content: fmt.Sprintf("Removed a nomination for %v", c.Name),
-		Flags:   discordgo.MessageFlagsEphemeral,
+	return &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: fmt.Sprintf("Removed a nomination for %v", c.Name),
+			Flags:   discordgo.MessageFlagsEphemeral,
+		},
 	}, nil
 }
 
@@ -98,7 +110,7 @@ func NewNominationListCommand(guildID, userID, name string, page int) *Nominatio
 	}
 }
 
-func (c *NominationListCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookParams, error) {
+func (c *NominationListCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.InteractionResponse, error) {
 	entries, lastPage, err := activity.GetActivitiesPage(ctx, c.GuildID, c.Page, &activity.ActivitesPageOptions{
 		Name:            c.Name,
 		NominationsOnly: true,

@@ -23,7 +23,7 @@ func NewAddCommand(guildID, activityType, name string) *AddCommand {
 	}
 }
 
-func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookParams, error) {
+func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.InteractionResponse, error) {
 	var typ activity.ActivityType
 	switch c.ActivityType {
 	case "activity":
@@ -37,16 +37,22 @@ func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discord
 		ae, ok := err.(*activity.ActivityError)
 		if ok {
 			if ae.Reason == activity.ALREADY_EXISTS {
-				return &discordgo.WebhookParams{
-					Content: fmt.Sprintf("%v already exists in the pool", c.Name),
-					Flags:   discordgo.MessageFlagsEphemeral,
+				return &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: fmt.Sprintf("%v already exists in the pool", c.Name),
+						Flags:   discordgo.MessageFlagsEphemeral,
+					},
 				}, nil
 			}
 		}
 		return nil, fmt.Errorf("act.Create: %v", err)
 	}
-	return &discordgo.WebhookParams{
-		Content: fmt.Sprintf("%v added to the pool", c.Name),
-		Flags:   discordgo.MessageFlagsEphemeral,
+	return &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: fmt.Sprintf("%v added to the pool", c.Name),
+			Flags:   discordgo.MessageFlagsEphemeral,
+		},
 	}, nil
 }

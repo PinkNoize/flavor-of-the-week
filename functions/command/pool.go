@@ -26,7 +26,7 @@ func NewPoolListCommand(guildID, name, activityType string, page int) *PoolListC
 	}
 }
 
-func (c *PoolListCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookParams, error) {
+func (c *PoolListCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.InteractionResponse, error) {
 	entries, lastPage, err := activity.GetActivitiesPage(ctx, c.GuildID, c.Page, &activity.ActivitesPageOptions{
 		Name:            c.Name,
 		Type:            activity.ActivityType(c.ActivityType),
