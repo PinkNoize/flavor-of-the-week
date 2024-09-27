@@ -43,7 +43,7 @@ func BuildDiscordPage(gameEntries []GameEntry, listType string, currentPage int,
 					discordgo.Button{
 						Label:    "Test button",
 						Style:    discordgo.SecondaryButton,
-						Disabled: false,
+						Disabled: true,
 						CustomID: "test",
 					},
 					// 			discordgo.Button{
