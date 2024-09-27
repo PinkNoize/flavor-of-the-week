@@ -48,6 +48,7 @@ func (actErr *ActivityError) Error() string {
 type innerActivity struct {
 	Typ         ActivityType `firestore:"type"`
 	Name        string       `firestore:"name"`
+	GuildID     string       `firestore:"guild_id"`
 	Nominations []string     `firestore:"nominations"`
 }
 
@@ -58,13 +59,21 @@ type Activity struct {
 	updateTime time.Time
 }
 
-func GetActivity(ctx context.Context, name, guildID string, cl *clients.Clients) (*Activity, error) {
+func getCollection(cl *clients.Clients) (*firestore.CollectionRef, error) {
 	firestoreClient, err := cl.Firestore()
 	if err != nil {
 		return nil, err
 	}
-	docName := generateName(name)
-	activityDoc := firestoreClient.Collection(guildID).Doc(docName)
+	return firestoreClient.Collection("flavor-of-the-week"), nil
+}
+
+func GetActivity(ctx context.Context, name, guildID string, cl *clients.Clients) (*Activity, error) {
+	activityCollection, err := getCollection(cl)
+	if err != nil {
+		return nil, fmt.Errorf("getCollection: %v", err)
+	}
+	docName := generateName(guildID, name)
+	activityDoc := activityCollection.Doc(docName)
 	activityDocSnap, err := activityDoc.Get(ctx)
 	if err != nil {
 		return nil, err
@@ -84,22 +93,24 @@ func GetActivity(ctx context.Context, name, guildID string, cl *clients.Clients)
 	return &act, nil
 }
 
-func generateName(name string) string {
-	return fmt.Sprintf("%x", sha256.Sum256([]byte(name)))
+func generateName(guildId, name string) string {
+	return fmt.Sprintf("%v:%x", guildId, sha256.Sum256([]byte(name)))
 }
 
 func Create(ctx context.Context, typ ActivityType, name, guildID string, cl *clients.Clients) (*Activity, error) {
-	firestoreClient, err := cl.Firestore()
+	activityCollection, err := getCollection(cl)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getCollection: %v", err)
 	}
-	docName := generateName(name)
-	activityDoc := firestoreClient.Collection(guildID).Doc(docName)
+
+	docName := generateName(guildID, name)
+	activityDoc := activityCollection.Doc(docName)
 	inAct := innerActivity{
-		Typ:  typ,
-		Name: name,
+		Typ:     typ,
+		Name:    name,
+		GuildID: guildID,
 	}
-	ctxzap.Info(ctx, "Creating ")
+	ctxzap.Info(ctx, fmt.Sprintf("Creating %v in %v", name, guildID))
 	wr, err := activityDoc.Create(ctx, &inAct)
 	if err != nil {
 		if status.Code(err) == codes.AlreadyExists {
@@ -178,13 +189,16 @@ func GetActivitiesPage(ctx context.Context, guildID, userID, name string, search
 		return []utils.GameEntry{}, true, nil
 	}
 
-	firestoreClient, err := cl.Firestore()
+	activityCollection, err := getCollection(cl)
 	if err != nil {
-		return nil, false, err
+		return nil, false, fmt.Errorf("getCollection: %v", err)
 	}
-	activityDoc := firestoreClient.Collection(guildID)
 	// This query requires an index which is created in terraform??
-	query := activityDoc.Select("name", "nominations")
+	query := activityCollection.Select("name", "nominations").WhereEntity(firestore.PropertyFilter{
+		Path:     "guild_id",
+		Operator: "==",
+		Value:    guildID,
+	})
 	if searchNominations {
 		query = query.WhereEntity(firestore.PropertyFilter{
 			Path:     "nominations",
