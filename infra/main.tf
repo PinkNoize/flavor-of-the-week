@@ -69,7 +69,7 @@ resource "google_firestore_index" "nominations-search-index" {
   collection = "flavor-of-the-week"
 
   fields {
-    field_path = "nominations"
+    field_path   = "nominations"
     array_config = "CONTAINS"
   }
 
