@@ -89,9 +89,9 @@ resource "google_project_iam_member" "appengine_creator" {
   member  = "serviceAccount:${google_service_account.cloudbuild_service_account.email}"
 }
 
-resource "google_project_iam_member" "index_admin" {
+resource "google_project_iam_member" "datastore_owner" {
   project = var.project
-  role    = "roles/datastore.indexAdmin"
+  role    = "roles/datastore.owner"
   member  = "serviceAccount:${google_service_account.cloudbuild_service_account.email}"
 }
 
@@ -215,7 +215,7 @@ resource "google_cloudbuild_trigger" "prod_trigger" {
     google_secret_manager_secret_iam_member.build_member,
     google_project_iam_member.eventarc_admin,
     google_project_iam_member.cloud_build_custom_role,
-    google_project_iam_member.index_admin,
+    google_project_iam_member.datastore_owner,
   ]
 }
 
