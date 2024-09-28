@@ -47,6 +47,22 @@ resource "google_app_engine_application" "app" {
   database_type = "CLOUD_FIRESTORE"
 }
 
+resource "google_firestore_index" "pool-search-index" {
+  project    = var.project
+  database   = "(default)"
+  collection = "flavor-of-the-week"
+
+  fields {
+    field_path = "name"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "guild_id"
+    order      = "ASCENDING"
+  }
+}
+
 # Cloud Functions role
 
 resource "google_service_account" "cloud_func_service_account" {
