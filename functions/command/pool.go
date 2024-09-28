@@ -27,9 +27,16 @@ func NewPoolListCommand(guildID, name, activityType string, page int) *PoolListC
 }
 
 func (c *PoolListCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookEdit, error) {
+	actType := ""
+	switch c.ActivityType {
+	case "activity":
+		actType = activity.ACTIVITY
+	case "game":
+		actType = activity.GAME
+	}
 	entries, lastPage, err := activity.GetActivitiesPage(ctx, c.GuildID, c.Page, &activity.ActivitesPageOptions{
 		Name:            c.Name,
-		Type:            activity.ActivityType(c.ActivityType),
+		Type:            activity.ActivityType(actType),
 		NominationsOnly: false,
 	}, cl)
 	if err != nil {
