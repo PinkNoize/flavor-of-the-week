@@ -63,6 +63,22 @@ resource "google_firestore_index" "pool-search-index" {
   }
 }
 
+resource "google_firestore_index" "pool-type-search-index" {
+  project    = var.project
+  database   = "(default)"
+  collection = "flavor-of-the-week"
+
+  fields {
+    field_path = "type"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "name"
+    order      = "ASCENDING"
+  }
+}
+
 resource "google_firestore_index" "nominations-search-index" {
   project    = var.project
   database   = "(default)"
