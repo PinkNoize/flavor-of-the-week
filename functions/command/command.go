@@ -38,7 +38,9 @@ func FromReader(ctx context.Context, r io.Reader) (DiscordCommand, error) {
 func (c *DiscordCommand) ToContext(ctx context.Context) context.Context {
 	ctx = context.WithValue(ctx, nickCtxKey, c.UserNick())
 	ctx = context.WithValue(ctx, userIdCtxKey, c.UserID())
-	ctx = context.WithValue(ctx, commandCtxKey, c.CommandName())
+	if c.interaction.Type == discordgo.InteractionApplicationCommand {
+		ctx = context.WithValue(ctx, commandCtxKey, c.CommandName())
+	}
 	return ctx
 }
 
