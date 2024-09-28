@@ -55,6 +55,18 @@ func (c *DiscordCommand) LogCommand(ctx context.Context) {
 	)
 }
 
+func (c *DiscordCommand) LogMessageComponent(ctx context.Context) {
+	data := c.interaction.MessageComponentData()
+
+	ctxzap.Info(ctx, fmt.Sprintf("User %v (%v) interacted with a message", c.UserNick(), c.UserID()),
+		zap.String("type", "audit"),
+		zap.String("nick", c.UserNick()),
+		zap.String("userid", c.UserID()),
+		zap.String("custom_id", data.CustomID),
+		zap.String("guildID", c.interaction.GuildID),
+	)
+}
+
 func (c *DiscordCommand) Type() discordgo.InteractionType {
 	return c.interaction.Type
 }

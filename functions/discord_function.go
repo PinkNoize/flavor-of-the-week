@@ -41,15 +41,15 @@ func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	// Log command
-	cmd.LogCommand(ctx)
-	// Add command context to ctx
-	ctx = cmd.ToContext(ctx)
 
 	switch cmd.Type() {
 	case discordgo.InteractionPing:
 		handlePing(ctx, w)
 	case discordgo.InteractionApplicationCommand:
+		// Log command
+		cmd.LogCommand(ctx)
+		// Add command context to ctx
+		ctx = cmd.ToContext(ctx)
 		err = forwardCommand(ctx, &cmd)
 		if err != nil {
 			slogger.Errorw("Failed to forward command",
@@ -65,6 +65,12 @@ func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 			)
 			return
 		}
+	case discordgo.InteractionMessageComponent:
+		cmd.LogMessageComponent(ctx)
+		ctx = cmd.ToContext(ctx)
+		ctxzap.Error(ctx, "Paging not implemented")
+		http.Error(w, "Paging not implemented", http.StatusNotImplemented)
+
 	case discordgo.InteractionApplicationCommandAutocomplete:
 		slogger.Error("Autocomplete not implemented")
 		http.Error(w, "Autocomplete not implemented", http.StatusNotImplemented)

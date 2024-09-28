@@ -56,3 +56,26 @@ func (g *Guild) SetPollChannel(ctx context.Context, channelId string) error {
 	g.inner.PollChannelID = &channelId
 	return nil
 }
+
+func (g *Guild) load(ctx context.Context) error {
+	if !g.loaded {
+		snap, err := g.docRef.Get(ctx)
+		if err != nil {
+			return fmt.Errorf("Get: %v", err)
+		}
+		err = snap.DataTo(&g.inner)
+		if err != nil {
+			return fmt.Errorf("DataTo: %v", err)
+		}
+		g.loaded = true
+	}
+	return nil
+}
+
+func (g *Guild) GetPollChannel(ctx context.Context) (*string, error) {
+	err := g.load(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("load: %v", err)
+	}
+	return g.inner.PollChannelID, nil
+}
