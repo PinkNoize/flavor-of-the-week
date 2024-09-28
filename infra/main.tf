@@ -63,6 +63,27 @@ resource "google_firestore_index" "pool-search-index" {
   }
 }
 
+resource "google_firestore_index" "nominations-search-index" {
+  project    = var.project
+  database   = "(default)"
+  collection = "flavor-of-the-week"
+
+  fields {
+    field_path = "nominations"
+    array_config = "CONTAINS"
+  }
+
+  fields {
+    field_path = "guild_id"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "name"
+    order      = "ASCENDING"
+  }
+}
+
 # Cloud Functions role
 
 resource "google_service_account" "cloud_func_service_account" {
