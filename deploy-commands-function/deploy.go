@@ -180,6 +180,22 @@ var commands = []*discordgo.ApplicationCommand{
 			},
 		},
 	},
+	{
+		Name:                     "force-remove",
+		Description:              "Force remove a game from the pool. Intended for admins only.",
+		Type:                     discordgo.ChatApplicationCommand,
+		DefaultMemberPermissions: Ptr(int64(discordgo.PermissionAdministrator)),
+		DMPermission:             Ptr(false),
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Name:         "name",
+				Description:  "Name of the game/activity",
+				Type:         discordgo.ApplicationCommandOptionString,
+				Required:     true,
+				Autocomplete: false,
+			},
+		},
+	},
 }
 
 func main() {

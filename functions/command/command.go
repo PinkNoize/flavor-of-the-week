@@ -111,7 +111,7 @@ func (c *DiscordCommand) ToCommand() (Command, error) {
 		if pass, missing := verifyOpts(args, []string{"name"}); !pass {
 			return nil, fmt.Errorf("missing options: %v", missing)
 		}
-		return NewRemoveCommand(c.interaction.GuildID, args["name"].StringValue()), nil
+		return NewRemoveCommand(c.interaction.GuildID, args["name"].StringValue(), false), nil
 	case "nominations":
 		subcmd := commandData.Options[0]
 		subcmd_args := optionsToMap(subcmd.Options)
@@ -158,6 +158,16 @@ func (c *DiscordCommand) ToCommand() (Command, error) {
 			return nil, fmt.Errorf("missing options: %v", missing)
 		}
 		return NewSetPollChannelCommand(c.interaction.GuildID, args["channel"].ChannelValue(nil)), nil
+	case "override-fow":
+		if pass, missing := verifyOpts(args, []string{"name"}); !pass {
+			return nil, fmt.Errorf("missing options: %v", missing)
+		}
+		return NewSetFowCommand(c.interaction.GuildID, args["name"].StringValue()), nil
+	case "force-remove":
+		if pass, missing := verifyOpts(args, []string{"name"}); !pass {
+			return nil, fmt.Errorf("missing options: %v", missing)
+		}
+		return NewRemoveCommand(c.interaction.GuildID, args["name"].StringValue(), true), nil
 	default:
 		return nil, fmt.Errorf("not a valid command: %v", commandData.Name)
 	}

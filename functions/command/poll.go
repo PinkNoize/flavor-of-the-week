@@ -2,8 +2,10 @@ package command
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
+	"github.com/PinkNoize/flavor-of-the-week/functions/guild"
 	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
 	"github.com/bwmarrin/discordgo"
 )
@@ -36,6 +38,13 @@ func NewSetPollChannelCommand(guildID string, channel *discordgo.Channel) *SetPo
 }
 
 func (c *SetPollChannelCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookEdit, error) {
-	// TODO
-	return utils.NewWebhookEdit("🚧 Command not implemented yet"), nil
+	g, err := guild.GetGuild(ctx, c.GuildID, cl)
+	if err != nil {
+		return nil, fmt.Errorf("GetGuild: %v", err)
+	}
+	err = g.SetPollChannel(ctx, c.ChannelID)
+	if err != nil {
+		return nil, fmt.Errorf("SetPollChannel: %v", err)
+	}
+	return utils.NewWebhookEdit(fmt.Sprintf("Set poll channel to <#%v>", c.ChannelID)), nil
 }

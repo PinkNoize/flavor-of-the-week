@@ -13,12 +13,14 @@ import (
 type RemoveCommand struct {
 	GuildID string
 	Name    string
+	Force   bool
 }
 
-func NewRemoveCommand(guildID, name string) *RemoveCommand {
+func NewRemoveCommand(guildID, name string, force bool) *RemoveCommand {
 	return &RemoveCommand{
 		GuildID: guildID,
 		Name:    name,
+		Force:   force,
 	}
 }
 
@@ -31,7 +33,7 @@ func (c *RemoveCommand) Execute(ctx context.Context, cl *clients.Clients) (*disc
 		}
 		return nil, err
 	}
-	err = act.RemoveActivity(ctx)
+	err = act.RemoveActivity(ctx, c.Force)
 	if err != nil {
 		ae, ok := err.(*activity.ActivityError)
 		if ok && ae.Reason == activity.STILL_HAS_NOMINATIONS {

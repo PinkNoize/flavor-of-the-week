@@ -50,6 +50,7 @@ type innerActivity struct {
 	Name        string       `firestore:"name"`
 	GuildID     string       `firestore:"guild_id"`
 	Nominations []string     `firestore:"nominations"`
+	IsFow       bool         `firestore:"is_fow"`
 }
 
 type Activity struct {
@@ -126,7 +127,14 @@ func Create(ctx context.Context, typ ActivityType, name, guildID string, cl *cli
 	}, nil
 }
 
-func (act *Activity) RemoveActivity(ctx context.Context) error {
+func (act *Activity) RemoveActivity(ctx context.Context, force bool) error {
+	if force {
+		_, err := act.docRef.Delete(ctx)
+		if err != nil {
+			return fmt.Errorf("Failed to delete %v (%v)", act.docName, act.inner.Name)
+		}
+		return nil
+	}
 	if len(act.inner.Nominations) > 0 {
 		return NewActivityError(STILL_HAS_NOMINATIONS)
 	}
