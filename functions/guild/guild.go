@@ -44,12 +44,9 @@ func GetGuild(ctx context.Context, guildID string, cl *clients.Clients) (*Guild,
 }
 
 func (g *Guild) SetPollChannel(ctx context.Context, channelId string) error {
-	_, err := g.docRef.Update(ctx, []firestore.Update{
-		{
-			Path:  "poll_channel_id",
-			Value: channelId,
-		},
-	})
+	_, err := g.docRef.Set(ctx, map[string]interface{}{
+		"poll_channel_id": channelId,
+	}, firestore.MergeAll)
 	if err != nil {
 		return err
 	}
