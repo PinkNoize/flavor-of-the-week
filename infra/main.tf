@@ -53,12 +53,12 @@ resource "google_firestore_index" "pool-search-index" {
   collection = "flavor-of-the-week"
 
   fields {
-    field_path = "name"
+    field_path = "guild_id"
     order      = "ASCENDING"
   }
 
   fields {
-    field_path = "guild_id"
+    field_path = "name"
     order      = "ASCENDING"
   }
 }
