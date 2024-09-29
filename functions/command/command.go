@@ -46,10 +46,16 @@ func (c *DiscordCommand) ToContext(ctx context.Context) context.Context {
 }
 
 func (c *DiscordCommand) LogCommand(ctx context.Context) {
-	if c.Type() == discordgo.InteractionApplicationCommand {
+	switch c.Type() {
+	case discordgo.InteractionApplicationCommand, discordgo.InteractionApplicationCommandAutocomplete:
 		command := c.interaction.ApplicationCommandData()
 
-		ctxzap.Info(ctx, fmt.Sprintf("User %v (%v) ran %v", c.UserNick(), c.UserID(), command.Name),
+		verb := "ran"
+		if c.Type() == discordgo.InteractionApplicationCommandAutocomplete {
+			verb = "autocompleted"
+		}
+
+		ctxzap.Info(ctx, fmt.Sprintf("User %v (%v) %v %v", c.UserNick(), c.UserID(), verb, command.Name),
 			zap.String("type", "audit"),
 			zap.String("nick", c.UserNick()),
 			zap.String("userid", c.UserID()),
@@ -57,7 +63,7 @@ func (c *DiscordCommand) LogCommand(ctx context.Context) {
 			zap.String("guildID", c.interaction.GuildID),
 			zap.Any("options", command.Options),
 		)
-	} else if c.Type() == discordgo.InteractionMessageComponent {
+	case discordgo.InteractionMessageComponent:
 		data := c.interaction.MessageComponentData()
 
 		ctxzap.Info(ctx, fmt.Sprintf("User %v (%v) interacted with a message", c.UserNick(), c.UserID()),

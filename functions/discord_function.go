@@ -86,7 +86,7 @@ func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 			}
 			if nameOpt, ok := cmd_args["name"]; ok && nameOpt.Focused {
 				userText := nameOpt.StringValue()
-				if len(userText) > MIN_AUTOCOMPLETE_CHARS {
+				if len(userText) >= MIN_AUTOCOMPLETE_CHARS {
 					autocompleteResults, err = activity.AutocompleteActivities(ctx, cmd.Interaction().GuildID, userText, clientLoader)
 					if err != nil {
 						ctxzap.Error(ctx, fmt.Sprintf("AutocompleteActivities: %v", err))
