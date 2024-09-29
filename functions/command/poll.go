@@ -21,8 +21,30 @@ func NewStartPollCommand(guildID string) *StartPollCommand {
 }
 
 func (c *StartPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookEdit, error) {
-	// TODO
-	return utils.NewWebhookEdit("🚧 Command not implemented yet"), nil
+	g, err := guild.GetGuild(ctx, c.GuildID, cl)
+	if err != nil {
+		return nil, fmt.Errorf("GetGuild: %v", err)
+	}
+	chanID, err := g.GetPollChannel(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("GetPollChannel: %v", err)
+	}
+	if chanID == nil {
+		return utils.NewWebhookEdit("The poll channel has not been set"), nil
+	}
+	s, err := cl.Discord()
+	if err != nil {
+		return nil, fmt.Errorf("Discord: %v", err)
+	}
+	msg, err := s.ChannelMessageSendComplex(*chanID, &discordgo.MessageSend{
+		Content: "hello",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("ChannelMessageSendComplex: %v", err)
+	}
+	// TODO: Remove nominations? Or only for winner?
+	msgLink := fmt.Sprintf("https://discord.com/channels/%v/%v/%v", c.GuildID, chanID, msg.ID)
+	return utils.NewWebhookEdit(fmt.Sprintf("Poll created: %v", msgLink)), nil
 }
 
 type SetPollChannelCommand struct {

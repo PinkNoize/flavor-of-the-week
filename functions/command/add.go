@@ -29,7 +29,8 @@ func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discord
 	switch c.ActivityType {
 	case "activity":
 		typ = activity.ACTIVITY
-	// TODO: check activity type, if game lookup, validate first
+	case "game":
+		return utils.NewWebhookEdit("🚧 Games not implemented yet"), nil
 	default:
 		return nil, fmt.Errorf("Activity type not supported: %v", c.ActivityType)
 	}
