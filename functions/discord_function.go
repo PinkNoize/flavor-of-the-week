@@ -17,7 +17,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 )
 
-const MIN_AUTOCOMPLETE_CHARS int = 3
+const MIN_AUTOCOMPLETE_CHARS int = 2
 
 func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 	var err error
@@ -86,10 +86,12 @@ func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 			}
 			if nameOpt, ok := cmd_args["name"]; ok && nameOpt.Focused {
 				userText := nameOpt.StringValue()
-				autocompleteResults, err = activity.AutocompleteActivities(ctx, cmd.Interaction().GuildID, userText, clientLoader)
-				if err != nil {
-					ctxzap.Error(ctx, fmt.Sprintf("AutocompleteActivities: %v", err))
-					break
+				if len(userText) > MIN_AUTOCOMPLETE_CHARS {
+					autocompleteResults, err = activity.AutocompleteActivities(ctx, cmd.Interaction().GuildID, userText, clientLoader)
+					if err != nil {
+						ctxzap.Error(ctx, fmt.Sprintf("AutocompleteActivities: %v", err))
+						break
+					}
 				}
 			}
 		default:
