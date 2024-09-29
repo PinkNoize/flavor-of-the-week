@@ -79,6 +79,22 @@ resource "google_firestore_index" "pool-type-search-index" {
   }
 }
 
+resource "google_firestore_index" "pool-autocomplete-index" {
+  project    = var.project
+  database   = "(default)"
+  collection = "flavor-of-the-week"
+
+  fields {
+    field_path = "guild_id"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "search_name"
+    order      = "ASCENDING"
+  }
+}
+
 resource "google_firestore_index" "nominations-search-index" {
   project    = var.project
   database   = "(default)"
