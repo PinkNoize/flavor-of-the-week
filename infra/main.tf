@@ -90,6 +90,11 @@ resource "google_firestore_index" "pool-autocomplete-index" {
   }
 
   fields {
+    field_path = "name"
+    order      = "ASCENDING"
+  }
+
+  fields {
     field_path = "search_name"
     order      = "ASCENDING"
   }
