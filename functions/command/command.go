@@ -125,29 +125,29 @@ func (c *DiscordCommand) fromApplicationCommand() (Command, error) {
 		return nil, fmt.Errorf("not a valid command")
 	}
 	commandData := c.interaction.ApplicationCommandData()
-	args := optionsToMap(commandData.Options)
+	args := utils.OptionsToMap(commandData.Options)
 	switch commandData.Name {
 	case "add":
-		if pass, missing := verifyOpts(args, []string{"type", "name"}); !pass {
+		if pass, missing := utils.VerifyOpts(args, []string{"type", "name"}); !pass {
 			return nil, fmt.Errorf("missing options: %v", missing)
 		}
 		return NewAddCommand(c.interaction.GuildID, args["type"].StringValue(), args["name"].StringValue()), nil
 	case "remove":
-		if pass, missing := verifyOpts(args, []string{"name"}); !pass {
+		if pass, missing := utils.VerifyOpts(args, []string{"name"}); !pass {
 			return nil, fmt.Errorf("missing options: %v", missing)
 		}
 		return NewRemoveCommand(c.interaction.GuildID, args["name"].StringValue(), false), nil
 	case "nominations":
 		subcmd := commandData.Options[0]
-		subcmd_args := optionsToMap(subcmd.Options)
+		subcmd_args := utils.OptionsToMap(subcmd.Options)
 		switch subcmd.Name {
 		case "add":
-			if pass, missing := verifyOpts(subcmd_args, []string{"name"}); !pass {
+			if pass, missing := utils.VerifyOpts(subcmd_args, []string{"name"}); !pass {
 				return nil, fmt.Errorf("missing options: %v", missing)
 			}
 			return NewNominationAddCommand(c.interaction.GuildID, c.UserID(), subcmd_args["name"].StringValue()), nil
 		case "remove":
-			if pass, missing := verifyOpts(subcmd_args, []string{"name"}); !pass {
+			if pass, missing := utils.VerifyOpts(subcmd_args, []string{"name"}); !pass {
 				return nil, fmt.Errorf("missing options: %v", missing)
 			}
 			return NewNominationRemoveCommand(c.interaction.GuildID, c.UserID(), subcmd_args["name"].StringValue()), nil
@@ -179,17 +179,17 @@ func (c *DiscordCommand) fromApplicationCommand() (Command, error) {
 	case "start-poll":
 		return NewStartPollCommand(c.interaction.GuildID), nil
 	case "poll-channel":
-		if pass, missing := verifyOpts(args, []string{"channel"}); !pass {
+		if pass, missing := utils.VerifyOpts(args, []string{"channel"}); !pass {
 			return nil, fmt.Errorf("missing options: %v", missing)
 		}
 		return NewSetPollChannelCommand(c.interaction.GuildID, args["channel"].ChannelValue(nil)), nil
 	case "override-fow":
-		if pass, missing := verifyOpts(args, []string{"name"}); !pass {
+		if pass, missing := utils.VerifyOpts(args, []string{"name"}); !pass {
 			return nil, fmt.Errorf("missing options: %v", missing)
 		}
 		return NewSetFowCommand(c.interaction.GuildID, args["name"].StringValue()), nil
 	case "force-remove":
-		if pass, missing := verifyOpts(args, []string{"name"}); !pass {
+		if pass, missing := utils.VerifyOpts(args, []string{"name"}); !pass {
 			return nil, fmt.Errorf("missing options: %v", missing)
 		}
 		return NewRemoveCommand(c.interaction.GuildID, args["name"].StringValue(), true), nil
@@ -217,26 +217,6 @@ func (c *DiscordCommand) fromMessageComponent() (Command, error) {
 		}
 	}
 	return nil, fmt.Errorf("Unexpected message component: %v", msgData)
-}
-
-func optionsToMap(opts []*discordgo.ApplicationCommandInteractionDataOption) map[string]*discordgo.ApplicationCommandInteractionDataOption {
-	mappedOpts := make(map[string]*discordgo.ApplicationCommandInteractionDataOption)
-
-	for i := range opts {
-		if opts[i] != nil {
-			mappedOpts[opts[i].Name] = opts[i]
-		}
-	}
-	return mappedOpts
-}
-
-func verifyOpts(opts map[string]*discordgo.ApplicationCommandInteractionDataOption, expected []string) (bool, string) {
-	for _, v := range expected {
-		if _, ok := opts[v]; !ok {
-			return false, v
-		}
-	}
-	return true, ""
 }
 
 type Command interface {

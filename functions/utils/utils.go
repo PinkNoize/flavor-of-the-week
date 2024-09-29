@@ -109,3 +109,23 @@ func NewWebhookEdit(content string) *discordgo.WebhookEdit {
 		Content: &content,
 	}
 }
+
+func OptionsToMap(opts []*discordgo.ApplicationCommandInteractionDataOption) map[string]*discordgo.ApplicationCommandInteractionDataOption {
+	mappedOpts := make(map[string]*discordgo.ApplicationCommandInteractionDataOption)
+
+	for i := range opts {
+		if opts[i] != nil {
+			mappedOpts[opts[i].Name] = opts[i]
+		}
+	}
+	return mappedOpts
+}
+
+func VerifyOpts(opts map[string]*discordgo.ApplicationCommandInteractionDataOption, expected []string) (bool, string) {
+	for _, v := range expected {
+		if _, ok := opts[v]; !ok {
+			return false, v
+		}
+	}
+	return true, ""
+}

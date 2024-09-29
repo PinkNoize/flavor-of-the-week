@@ -5,11 +5,13 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/firestore"
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
 	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
+	"github.com/bwmarrin/discordgo"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
@@ -17,6 +19,7 @@ import (
 )
 
 const PAGE_SIZE int = 5
+const MAX_AUTOCOMPLETE_ENTRIES int = 5
 
 type ActivityType string
 
@@ -48,6 +51,7 @@ func (actErr *ActivityError) Error() string {
 type innerActivity struct {
 	Typ         ActivityType `firestore:"type"`
 	Name        string       `firestore:"name"`
+	SearchName  string       `firestore:"search_name"`
 	GuildID     string       `firestore:"guild_id"`
 	Nominations []string     `firestore:"nominations"`
 	IsFow       bool         `firestore:"is_fow"`
@@ -107,9 +111,10 @@ func Create(ctx context.Context, typ ActivityType, name, guildID string, cl *cli
 	docName := generateName(guildID, name)
 	activityDoc := activityCollection.Doc(docName)
 	inAct := innerActivity{
-		Typ:     typ,
-		Name:    name,
-		GuildID: guildID,
+		Typ:        typ,
+		Name:       name,
+		SearchName: strings.ToLower(name),
+		GuildID:    guildID,
 	}
 	ctxzap.Info(ctx, fmt.Sprintf("Creating %v in %v", name, guildID))
 	wr, err := activityDoc.Create(ctx, &inAct)
@@ -208,7 +213,7 @@ func GetActivitiesPage(ctx context.Context, guildID string, pageNum int, opts *A
 	if err != nil {
 		return nil, false, fmt.Errorf("getCollection: %v", err)
 	}
-	// This query requires an index which is created in terraform??
+	// This query requires an index which is created in terraform
 	query := activityCollection.Select("name", "nominations").WhereEntity(firestore.PropertyFilter{
 		Path:     "guild_id",
 		Operator: "==",
@@ -259,4 +264,48 @@ func GetActivitiesPage(ctx context.Context, guildID string, pageNum int, opts *A
 	}
 	return results, lastItem, nil
 
+}
+
+func AutocompleteActivities(ctx context.Context, guildID, text string, cl *clients.Clients) ([]*discordgo.ApplicationCommandOptionChoice, error) {
+	activityCollection, err := getCollection(cl)
+	if err != nil {
+		return []*discordgo.ApplicationCommandOptionChoice{}, fmt.Errorf("getCollection: %v", err)
+	}
+	// This query requires an index which is created in terraform
+	query := activityCollection.Select("name").WhereEntity(firestore.PropertyFilter{
+		Path:     "guild_id",
+		Operator: "==",
+		Value:    guildID,
+	}).WhereEntity(firestore.PropertyFilter{
+		Path:     "search_name",
+		Operator: ">=",
+		Value:    strings.ToLower(text),
+	}).WhereEntity(firestore.PropertyFilter{
+		Path:     "search_name",
+		Operator: "<=",
+		Value:    "\uf8ff",
+	}).OrderBy("name", firestore.Asc)
+	iter := query.Documents(ctx)
+	defer iter.Stop()
+
+	results := make([]*discordgo.ApplicationCommandOptionChoice, 0, MAX_AUTOCOMPLETE_ENTRIES)
+	for i := 0; i < MAX_AUTOCOMPLETE_ENTRIES; i++ {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return []*discordgo.ApplicationCommandOptionChoice{}, fmt.Errorf("iter.Next: %v", err)
+		}
+		var inAct innerActivity
+		err = doc.DataTo(&inAct)
+		if err != nil {
+			return []*discordgo.ApplicationCommandOptionChoice{}, fmt.Errorf("doc.DataTo: %v", err)
+		}
+		results = append(results, &discordgo.ApplicationCommandOptionChoice{
+			Name:  inAct.Name,
+			Value: inAct.Name,
+		})
+	}
+	return results, nil
 }

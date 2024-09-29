@@ -10,10 +10,14 @@ import (
 
 	"cloud.google.com/go/pubsub"
 
+	"github.com/PinkNoize/flavor-of-the-week/functions/activity"
 	"github.com/PinkNoize/flavor-of-the-week/functions/command"
+	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
 	"github.com/bwmarrin/discordgo"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 )
+
+const MIN_AUTOCOMPLETE_CHARS int = 3
 
 func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 	var err error
@@ -71,8 +75,34 @@ func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case discordgo.InteractionApplicationCommandAutocomplete:
-		slogger.Error("Autocomplete not implemented")
-		http.Error(w, "Autocomplete not implemented", http.StatusNotImplemented)
+		autocompleteResults := []*discordgo.ApplicationCommandOptionChoice{}
+		switch cmd.CommandName() {
+		case "remove", "pool", "force-remove", "override-fow", "nominations":
+			commandData := cmd.Interaction().ApplicationCommandData()
+			cmd_args := utils.OptionsToMap(commandData.Options)
+			if cmd.CommandName() == "nominations" {
+				subcmd := commandData.Options[0]
+				cmd_args = utils.OptionsToMap(subcmd.Options)
+			}
+			if nameOpt, ok := cmd_args["name"]; ok && nameOpt.Focused {
+				userText := nameOpt.StringValue()
+				autocompleteResults, err = activity.AutocompleteActivities(ctx, cmd.Interaction().GuildID, userText, clientLoader)
+				if err != nil {
+					ctxzap.Error(ctx, fmt.Sprintf("AutocompleteActivities: %v", err))
+					break
+				}
+			}
+		default:
+			slogger.Error("Autocomplete not implemented")
+			http.Error(w, "Autocomplete not implemented", http.StatusNotImplemented)
+		}
+		err = writeAutocompleteResults(w, autocompleteResults)
+		if err != nil {
+			slogger.Errorw("Failed to return autocomplete response",
+				"error", err,
+			)
+			return
+		}
 	default:
 		slogger.Errorw("Unknown Interaction Type",
 			"interactionType", cmd.Type(),
@@ -119,6 +149,23 @@ func writeDeferredResponse(w http.ResponseWriter, typ discordgo.InteractionRespo
 	err := json.NewEncoder(w).Encode(response)
 	if err != nil {
 		return fmt.Errorf("writeDeferredResponse: jsonEncoder: %v", err)
+	}
+	return nil
+}
+
+func writeAutocompleteResults(w http.ResponseWriter, results []*discordgo.ApplicationCommandOptionChoice) error {
+	response := discordgo.InteractionResponse{
+		Type: discordgo.InteractionApplicationCommandAutocompleteResult,
+		Data: &discordgo.InteractionResponseData{
+			Choices: results,
+		},
+	}
+
+	// MUST SET HEADER BEFORE CONTENT
+	w.Header().Set("Content-Type", "application/json")
+	err := json.NewEncoder(w).Encode(response)
+	if err != nil {
+		return fmt.Errorf("jsonEncoder: %v", err)
 	}
 	return nil
 }
