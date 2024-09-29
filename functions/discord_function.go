@@ -50,7 +50,7 @@ func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 	switch cmd.Type() {
 	case discordgo.InteractionPing:
 		handlePing(ctx, w)
-	case discordgo.InteractionApplicationCommand:
+	case discordgo.InteractionApplicationCommand, discordgo.InteractionMessageComponent:
 		err = forwardCommand(ctx, &cmd)
 		if err != nil {
 			slogger.Errorw("Failed to forward command",
@@ -59,16 +59,11 @@ func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		slogger.Info("Deferring response...")
-		err = writeDeferredResponse(w, discordgo.InteractionResponseDeferredChannelMessageWithSource)
-		if err != nil {
-			slogger.Errorw("Failed to return deferred response",
-				"error", err,
-			)
-			return
+		if cmd.Type() == discordgo.InteractionApplicationCommand {
+			err = writeDeferredResponse(w, discordgo.InteractionResponseDeferredChannelMessageWithSource)
+		} else if cmd.Type() == discordgo.InteractionMessageComponent {
+			err = writeDeferredResponse(w, discordgo.InteractionResponseDeferredMessageUpdate)
 		}
-	case discordgo.InteractionMessageComponent:
-		slogger.Info("Deferring response...")
-		err = writeDeferredResponse(w, discordgo.InteractionResponseDeferredMessageUpdate)
 		if err != nil {
 			slogger.Errorw("Failed to return deferred response",
 				"error", err,
