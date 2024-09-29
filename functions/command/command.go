@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
+	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
 	"github.com/bwmarrin/discordgo"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"go.uber.org/zap"
@@ -45,28 +46,28 @@ func (c *DiscordCommand) ToContext(ctx context.Context) context.Context {
 }
 
 func (c *DiscordCommand) LogCommand(ctx context.Context) {
-	command := c.interaction.ApplicationCommandData()
+	if c.Type() == discordgo.InteractionApplicationCommand {
+		command := c.interaction.ApplicationCommandData()
 
-	ctxzap.Info(ctx, fmt.Sprintf("User %v (%v) ran %v", c.UserNick(), c.UserID(), command.Name),
-		zap.String("type", "audit"),
-		zap.String("nick", c.UserNick()),
-		zap.String("userid", c.UserID()),
-		zap.String("command", command.Name),
-		zap.String("guildID", c.interaction.GuildID),
-		zap.Any("options", command.Options),
-	)
-}
+		ctxzap.Info(ctx, fmt.Sprintf("User %v (%v) ran %v", c.UserNick(), c.UserID(), command.Name),
+			zap.String("type", "audit"),
+			zap.String("nick", c.UserNick()),
+			zap.String("userid", c.UserID()),
+			zap.String("command", command.Name),
+			zap.String("guildID", c.interaction.GuildID),
+			zap.Any("options", command.Options),
+		)
+	} else if c.Type() == discordgo.InteractionMessageComponent {
+		data := c.interaction.MessageComponentData()
 
-func (c *DiscordCommand) LogMessageComponent(ctx context.Context) {
-	data := c.interaction.MessageComponentData()
-
-	ctxzap.Info(ctx, fmt.Sprintf("User %v (%v) interacted with a message", c.UserNick(), c.UserID()),
-		zap.String("type", "audit"),
-		zap.String("nick", c.UserNick()),
-		zap.String("userid", c.UserID()),
-		zap.String("custom_id", data.CustomID),
-		zap.String("guildID", c.interaction.GuildID),
-	)
+		ctxzap.Info(ctx, fmt.Sprintf("User %v (%v) interacted with a message", c.UserNick(), c.UserID()),
+			zap.String("type", "audit"),
+			zap.String("nick", c.UserNick()),
+			zap.String("userid", c.UserID()),
+			zap.String("custom_id", data.CustomID),
+			zap.String("guildID", c.interaction.GuildID),
+		)
+	}
 }
 
 func (c *DiscordCommand) Type() discordgo.InteractionType {
@@ -110,6 +111,16 @@ func (c *DiscordCommand) CommandName() string {
 }
 
 func (c *DiscordCommand) ToCommand() (Command, error) {
+	switch c.Type() {
+	case discordgo.InteractionApplicationCommand:
+		return c.fromApplicationCommand()
+	case discordgo.InteractionMessageComponent:
+		return c.fromMessageComponent()
+	}
+	return nil, fmt.Errorf("Unexpected interaction type: %v", c.Type())
+}
+
+func (c *DiscordCommand) fromApplicationCommand() (Command, error) {
 	if c.Type() != discordgo.InteractionApplicationCommand {
 		return nil, fmt.Errorf("not a valid command")
 	}
@@ -185,6 +196,27 @@ func (c *DiscordCommand) ToCommand() (Command, error) {
 	default:
 		return nil, fmt.Errorf("not a valid command: %v", commandData.Name)
 	}
+}
+
+func (c *DiscordCommand) fromMessageComponent() (Command, error) {
+	if c.Type() != discordgo.InteractionMessageComponent {
+		return nil, fmt.Errorf("not a valid message")
+	}
+	msgData := c.interaction.MessageComponentData()
+	customID, err := utils.ParseCustomID(msgData.CustomID)
+	if err != nil {
+		return nil, err
+	}
+	switch msgData.ComponentType {
+	case discordgo.ButtonComponent:
+		switch customID.Type {
+		case "pool":
+			return NewPoolListCommand(c.interaction.GuildID, customID.Filter.Name, customID.Filter.Type, customID.Page), nil
+		case "nominations":
+			return NewNominationListCommand(c.interaction.GuildID, c.interaction.Member.User.ID, customID.Filter.Name, customID.Page), nil
+		}
+	}
+	return nil, fmt.Errorf("Unexpected message component: %v", msgData)
 }
 
 func optionsToMap(opts []*discordgo.ApplicationCommandInteractionDataOption) map[string]*discordgo.ApplicationCommandInteractionDataOption {

@@ -95,5 +95,8 @@ func (c *NominationListCommand) Execute(ctx context.Context, cl *clients.Clients
 	if err != nil {
 		return nil, fmt.Errorf("GetActivitesPage: %v", err)
 	}
-	return utils.BuildDiscordPage(entries, "nominations", c.Page, lastPage), nil
+	customID := utils.NewCustomID("nominations", utils.Filter{
+		Name: c.Name,
+	}, c.Page)
+	return utils.BuildDiscordPage(entries, customID, lastPage), nil
 }

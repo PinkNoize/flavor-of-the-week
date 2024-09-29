@@ -42,14 +42,15 @@ func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Log command
+	cmd.LogCommand(ctx)
+	// Add command context to ctx
+	ctx = cmd.ToContext(ctx)
+
 	switch cmd.Type() {
 	case discordgo.InteractionPing:
 		handlePing(ctx, w)
 	case discordgo.InteractionApplicationCommand:
-		// Log command
-		cmd.LogCommand(ctx)
-		// Add command context to ctx
-		ctx = cmd.ToContext(ctx)
 		err = forwardCommand(ctx, &cmd)
 		if err != nil {
 			slogger.Errorw("Failed to forward command",
@@ -58,7 +59,7 @@ func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		slogger.Info("Deferring response...")
-		err = writeDeferredResponse(w)
+		err = writeDeferredResponse(w, discordgo.InteractionResponseDeferredChannelMessageWithSource)
 		if err != nil {
 			slogger.Errorw("Failed to return deferred response",
 				"error", err,
@@ -66,11 +67,14 @@ func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case discordgo.InteractionMessageComponent:
-		cmd.LogMessageComponent(ctx)
-		ctx = cmd.ToContext(ctx)
-		ctxzap.Error(ctx, "Paging not implemented")
-		http.Error(w, "Paging not implemented", http.StatusNotImplemented)
-
+		slogger.Info("Deferring response...")
+		err = writeDeferredResponse(w, discordgo.InteractionResponseDeferredMessageUpdate)
+		if err != nil {
+			slogger.Errorw("Failed to return deferred response",
+				"error", err,
+			)
+			return
+		}
 	case discordgo.InteractionApplicationCommandAutocomplete:
 		slogger.Error("Autocomplete not implemented")
 		http.Error(w, "Autocomplete not implemented", http.StatusNotImplemented)
@@ -106,9 +110,9 @@ func forwardCommand(ctx context.Context, command *command.DiscordCommand) error 
 	return nil
 }
 
-func writeDeferredResponse(w http.ResponseWriter) error {
+func writeDeferredResponse(w http.ResponseWriter, typ discordgo.InteractionResponseType) error {
 	response := discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource, // Deferred response
+		Type: typ, // Deferred response
 		Data: &discordgo.InteractionResponseData{
 			Content: "...",
 			Flags:   discordgo.MessageFlagsEphemeral,

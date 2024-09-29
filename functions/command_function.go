@@ -34,9 +34,6 @@ func CommandPubSub(ctx context.Context, m PubSubMessage) error {
 	if err != nil {
 		return fmt.Errorf("error parsing command: %v", err)
 	}
-	discordCmd.LogCommand(ctx)
-	ctx = discordCmd.ToContext(ctx)
-
 	var response *discordgo.WebhookEdit = nil
 	defer func() {
 		ctxzap.Info(ctx, "Sending Interaction response")
@@ -54,10 +51,16 @@ func CommandPubSub(ctx context.Context, m PubSubMessage) error {
 			return
 		}
 	}()
+	discordCmd.LogCommand(ctx)
+	ctx = discordCmd.ToContext(ctx)
 
-	cmd, err := discordCmd.ToCommand()
-	if err != nil {
-		return fmt.Errorf("converting to command: %v", err)
+	var cmd command.Command
+	switch discordCmd.Type() {
+	case discordgo.InteractionApplicationCommand, discordgo.InteractionMessageComponent:
+		cmd, err = discordCmd.ToCommand()
+		if err != nil {
+			return fmt.Errorf("converting to command: %v", err)
+		}
 	}
 	response, err = cmd.Execute(ctx, clientLoader)
 	if err != nil {
