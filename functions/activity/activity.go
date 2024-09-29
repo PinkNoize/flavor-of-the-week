@@ -214,11 +214,7 @@ func GetActivitiesPage(ctx context.Context, guildID string, pageNum int, opts *A
 		return nil, false, fmt.Errorf("getCollection: %v", err)
 	}
 	// This query requires an index which is created in terraform
-	query := activityCollection.Select("name", "nominations").WhereEntity(firestore.PropertyFilter{
-		Path:     "guild_id",
-		Operator: "==",
-		Value:    guildID,
-	})
+	query := activityCollection.Select("name", "nominations")
 	if opts.Type != "" {
 		query = query.WhereEntity(firestore.PropertyFilter{
 			Path:     "type",
@@ -233,6 +229,11 @@ func GetActivitiesPage(ctx context.Context, guildID string, pageNum int, opts *A
 			Value:    opts.UserId,
 		})
 	}
+	query = query.WhereEntity(firestore.PropertyFilter{
+		Path:     "guild_id",
+		Operator: "==",
+		Value:    guildID,
+	})
 	iter := query.OrderBy("name", firestore.Asc).Offset(pageNum * PAGE_SIZE).Documents(ctx)
 	defer iter.Stop()
 
@@ -273,10 +274,6 @@ func AutocompleteActivities(ctx context.Context, guildID, text string, cl *clien
 	}
 	// This query requires an index which is created in terraform
 	query := activityCollection.Select("name").WhereEntity(firestore.PropertyFilter{
-		Path:     "guild_id",
-		Operator: "==",
-		Value:    guildID,
-	}).WhereEntity(firestore.PropertyFilter{
 		Path:     "search_name",
 		Operator: ">=",
 		Value:    strings.ToLower(text),
@@ -284,6 +281,10 @@ func AutocompleteActivities(ctx context.Context, guildID, text string, cl *clien
 		Path:     "search_name",
 		Operator: "<=",
 		Value:    "\uf8ff",
+	}).WhereEntity(firestore.PropertyFilter{
+		Path:     "guild_id",
+		Operator: "==",
+		Value:    guildID,
 	}).OrderBy("name", firestore.Asc)
 	iter := query.Documents(ctx)
 	defer iter.Stop()
