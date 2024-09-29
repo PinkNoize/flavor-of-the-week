@@ -234,7 +234,7 @@ func GetActivitiesPage(ctx context.Context, guildID string, pageNum int, opts *A
 		Operator: "==",
 		Value:    guildID,
 	})
-	iter := query.OrderBy("name", firestore.Asc).Offset(pageNum * PAGE_SIZE).Documents(ctx)
+	iter := query.OrderBy("search_name", firestore.Asc).Offset(pageNum * PAGE_SIZE).Documents(ctx)
 	defer iter.Stop()
 
 	results := make([]utils.GameEntry, 0, PAGE_SIZE)
@@ -286,7 +286,7 @@ func AutocompleteActivities(ctx context.Context, guildID, text string, cl *clien
 		Path:     "guild_id",
 		Operator: "==",
 		Value:    guildID,
-	}).OrderBy("name", firestore.Asc)
+	}).OrderBy("search_name", firestore.Asc)
 	iter := query.Documents(ctx)
 	defer iter.Stop()
 
