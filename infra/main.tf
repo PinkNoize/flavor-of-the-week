@@ -58,7 +58,7 @@ resource "google_firestore_index" "pool-search-index" {
   }
 
   fields {
-    field_path = "name"
+    field_path = "search_name"
     order      = "ASCENDING"
   }
 }
@@ -74,7 +74,7 @@ resource "google_firestore_index" "pool-type-search-index" {
   }
 
   fields {
-    field_path = "name"
+    field_path = "search_name"
     order      = "ASCENDING"
   }
 }
@@ -116,7 +116,7 @@ resource "google_firestore_index" "nominations-search-index" {
   }
 
   fields {
-    field_path = "name"
+    field_path = "search_name"
     order      = "ASCENDING"
   }
 }
