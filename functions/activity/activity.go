@@ -272,15 +272,16 @@ func AutocompleteActivities(ctx context.Context, guildID, text string, cl *clien
 	if err != nil {
 		return []*discordgo.ApplicationCommandOptionChoice{}, fmt.Errorf("getCollection: %v", err)
 	}
+	text = strings.ToLower(text)
 	// This query requires an index which is created in terraform
 	query := activityCollection.Select("name").WhereEntity(firestore.PropertyFilter{
 		Path:     "search_name",
 		Operator: ">=",
-		Value:    strings.ToLower(text),
+		Value:    text,
 	}).WhereEntity(firestore.PropertyFilter{
 		Path:     "search_name",
 		Operator: "<=",
-		Value:    "\uf8ff",
+		Value:    text + "\uf8ff",
 	}).WhereEntity(firestore.PropertyFilter{
 		Path:     "guild_id",
 		Operator: "==",
