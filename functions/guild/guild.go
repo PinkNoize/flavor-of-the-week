@@ -10,6 +10,8 @@ import (
 
 type innerGuild struct {
 	PollChannelID *string `firestore:"poll_channel_id"`
+	Fow           *string `firestore:"fow"`
+	FowCount      int     `firestore:"fow_count"`
 }
 
 type Guild struct {
@@ -51,6 +53,18 @@ func (g *Guild) SetPollChannel(ctx context.Context, channelId string) error {
 		return err
 	}
 	g.inner.PollChannelID = &channelId
+	return nil
+}
+
+func (g *Guild) SetFow(ctx context.Context, fow string) error {
+	_, err := g.docRef.Set(ctx, map[string]interface{}{
+		"fow":       fow,
+		"fow_count": firestore.Increment(1),
+	}, firestore.MergeAll)
+	if err != nil {
+		return err
+	}
+	g.inner.Fow = &fow
 	return nil
 }
 

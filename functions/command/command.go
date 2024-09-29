@@ -199,6 +199,8 @@ func (c *DiscordCommand) fromApplicationCommand() (Command, error) {
 			return nil, fmt.Errorf("missing options: %v", missing)
 		}
 		return NewRemoveCommand(c.interaction.GuildID, args["name"].StringValue(), true), nil
+	case "stats":
+		return NewStatsCommand(c.interaction.GuildID), nil
 	default:
 		return nil, fmt.Errorf("not a valid command: %v", commandData.Name)
 	}

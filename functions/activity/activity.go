@@ -54,7 +54,6 @@ type innerActivity struct {
 	SearchName  string       `firestore:"search_name"`
 	GuildID     string       `firestore:"guild_id"`
 	Nominations []string     `firestore:"nominations"`
-	IsFow       bool         `firestore:"is_fow"`
 }
 
 type Activity struct {

@@ -141,6 +141,12 @@ var commands = []*discordgo.ApplicationCommand{
 			},
 		},
 	},
+	{
+		Name:         "stats",
+		Description:  "Get stats on the pool",
+		Type:         discordgo.ChatApplicationCommand,
+		DMPermission: Ptr(false),
+	},
 	// Admin commands
 	{
 		Name:                     "poll-channel",
