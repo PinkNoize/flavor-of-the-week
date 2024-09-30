@@ -16,7 +16,7 @@ type Clients struct {
 	discordSession  *lazy.Loader[*discordgo.Session]
 }
 
-func New(ctx context.Context, projectID string) *Clients {
+func New(ctx context.Context, projectID, discordToken string) *Clients {
 	f := lazy.New(func() (*firestore.Client, error) {
 		firestoreClient, err := firestore.NewClient(ctx, projectID)
 		if err != nil {
@@ -25,7 +25,7 @@ func New(ctx context.Context, projectID string) *Clients {
 		return firestoreClient, nil
 	})
 	d := lazy.New(func() (*discordgo.Session, error) {
-		discordSession, err := discordgo.New("")
+		discordSession, err := discordgo.New("Bot " + discordToken)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create discord client: %v", err)
 		}
