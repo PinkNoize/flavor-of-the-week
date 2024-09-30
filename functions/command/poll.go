@@ -8,6 +8,7 @@ import (
 	"github.com/PinkNoize/flavor-of-the-week/functions/guild"
 	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
 	"github.com/bwmarrin/discordgo"
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 )
 
 type StartPollCommand struct {
@@ -36,6 +37,13 @@ func (c *StartPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*d
 	if err != nil {
 		return nil, fmt.Errorf("Discord: %v", err)
 	}
+	// REMOVE
+	test, err := s.Application("@me")
+	if err != nil {
+		return nil, fmt.Errorf("Application: %v", err)
+	}
+	ctxzap.Info(ctx, test.Name)
+
 	msg, err := s.ChannelMessageSendComplex(*chanID, &discordgo.MessageSend{
 		Content: "hello",
 	})
