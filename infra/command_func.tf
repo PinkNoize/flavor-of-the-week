@@ -2,7 +2,6 @@
 
 locals {
   secret_id_split = split(var.discord_secret_id, "/")
-  secret_id       = element(secret_id_split, length(secret_id_split) - 1)
 }
 
 resource "google_cloudfunctions2_function" "command" {
@@ -34,7 +33,7 @@ resource "google_cloudfunctions2_function" "command" {
     secret_environment_variables {
       key        = "DISCORD_TOKEN"
       project_id = var.project
-      secret     = local.secret_id
+      secret     = element(local.secret_id_split, length(local.secret_id_split) - 1)
       version    = "latest"
     }
     service_account_email = google_service_account.cloud_func_service_account.email
