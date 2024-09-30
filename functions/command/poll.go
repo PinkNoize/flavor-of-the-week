@@ -44,8 +44,8 @@ func (c *StartPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*d
 		return nil, fmt.Errorf("ChannelMessageSendComplex: %v", err)
 	}
 	// TODO: Remove nominations? Or only for winner?
-	msgLink := fmt.Sprintf("https://discord.com/channels/%v/%v/%v", c.GuildID, chanID, msg.ID)
-	return utils.NewWebhookEdit(fmt.Sprintf("[Poll](%v) created", msgLink)), nil
+	msgLink := fmt.Sprintf("https://discord.com/channels/%v/%v/%v", c.GuildID, *chanID, msg.ID)
+	return utils.NewWebhookEdit(fmt.Sprintf("Poll created: %v", msgLink)), nil
 }
 
 type SetPollChannelCommand struct {
