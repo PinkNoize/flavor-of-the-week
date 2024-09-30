@@ -1,7 +1,7 @@
 # Command Function
 
 locals {
-  secret_id_split = split(var.discord_secret_id, "/")
+  secret_id_split = split("/", var.discord_secret_id)
 }
 
 resource "google_cloudfunctions2_function" "command" {
