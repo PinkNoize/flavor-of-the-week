@@ -27,10 +27,10 @@ resource "google_cloudfunctions2_function" "command" {
       DISCORD_PUBKEY = var.discord_public_key,
     }
     secret_environment_variables {
-      key = "DISCORD_TOKEN"
+      key        = "DISCORD_TOKEN"
       project_id = var.project
-      secret = var.discord_secret_id
-      version = "latest"
+      secret     = var.discord_secret_id
+      version    = "latest"
     }
     service_account_email = google_service_account.cloud_func_service_account.email
   }
