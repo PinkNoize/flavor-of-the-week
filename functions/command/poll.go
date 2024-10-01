@@ -3,7 +3,10 @@ package command
 import (
 	"context"
 	"fmt"
+	"slices"
+	"sort"
 
+	"github.com/PinkNoize/flavor-of-the-week/functions/activity"
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
 	"github.com/PinkNoize/flavor-of-the-week/functions/guild"
 	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
@@ -32,20 +35,136 @@ func (c *StartPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*d
 	if chanID == nil {
 		return utils.NewWebhookEdit("The poll channel has not been set"), nil
 	}
+	pollID, err := g.GetActivePoll(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("GetActivePollID: %v", err)
+	}
+	if pollID != nil {
+		return utils.NewWebhookEdit("There is already an active poll"), nil
+	}
+
 	s, err := cl.Discord()
 	if err != nil {
 		return nil, fmt.Errorf("Discord: %v", err)
 	}
 
 	msg, err := s.ChannelMessageSendComplex(*chanID, &discordgo.MessageSend{
-		Content: "hello",
+		Poll: &discordgo.Poll{
+			Question: discordgo.PollMedia{
+				Text: "What should the flavor of the week be?",
+			},
+			Answers: []discordgo.PollAnswer{
+				{
+					Media: &discordgo.PollMedia{
+						Text: "First",
+					},
+				},
+				{
+					Media: &discordgo.PollMedia{
+						Text: "Two",
+					},
+				},
+			},
+			AllowMultiselect: false,
+			LayoutType:       discordgo.PollLayoutTypeDefault,
+			Duration:         1,
+		},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("ChannelMessageSendComplex: %v", err)
 	}
-	// TODO: Remove nominations? Or only for winner?
+	err = g.SetActivePoll(ctx, &guild.PollInfo{
+		ChannelID: *chanID,
+		MessageID: msg.ID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("SetActivePoll: %v", err)
+	}
 	msgLink := fmt.Sprintf("https://discord.com/channels/%v/%v/%v", c.GuildID, *chanID, msg.ID)
 	return utils.NewWebhookEdit(fmt.Sprintf("Poll created: %v", msgLink)), nil
+}
+
+type EndPollCommand struct {
+	GuildID string
+}
+
+func NewEndPollCommand(guildID string) *EndPollCommand {
+	return &EndPollCommand{
+		GuildID: guildID,
+	}
+}
+
+func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookEdit, error) {
+	g, err := guild.GetGuild(ctx, c.GuildID, cl)
+	if err != nil {
+		return nil, fmt.Errorf("GetGuild: %v", err)
+	}
+	pollID, err := g.GetActivePoll(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("GetActivePollID: %v", err)
+	}
+	if pollID == nil {
+		return utils.NewWebhookEdit("There is no active poll to end"), nil
+	}
+	s, err := cl.Discord()
+	if err != nil {
+		return nil, fmt.Errorf("Discord: %v", err)
+	}
+	msg, err := s.ChannelMessage(pollID.ChannelID, pollID.MessageID)
+	if err != nil || msg.Poll == nil {
+		return utils.NewWebhookEdit("⚠️ Unable to retrieve the poll"), fmt.Errorf("ChannelMessage: %v", err)
+	}
+	if msg.Poll.Results == nil || !msg.Poll.Results.Finalized {
+		msg, err = s.PollExpire(pollID.ChannelID, pollID.MessageID)
+		if err != nil {
+			return utils.NewWebhookEdit("⚠️ Unable to end the poll"), fmt.Errorf("PollExpire: %v", err)
+		}
+		if msg.Poll.Results == nil || !msg.Poll.Results.Finalized {
+			return utils.NewWebhookEdit("Failed to end the poll"), nil
+		}
+	}
+	winner, tie := determinePollWinner(msg.Poll)
+	if tie {
+		return utils.NewWebhookEdit("Ended the poll with a tie"), nil
+	} else {
+		err = g.SetFow(ctx, winner)
+		if err != nil {
+			return nil, fmt.Errorf("SetFow: %v", err)
+		}
+	}
+	err = g.ClearActivePoll(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("ClearActivePoll: %v", err)
+	}
+
+	err = activity.ClearNominations(ctx, c.GuildID, cl)
+	if err != nil {
+		return nil, fmt.Errorf("ClearNominations: %v", err)
+	}
+	return utils.NewWebhookEdit(fmt.Sprintf("Poll ended\nWinner: %v", winner)), nil
+}
+
+func determinePollWinner(poll *discordgo.Poll) (string, bool) {
+	answerCounts := poll.Results.AnswerCounts
+	sort.Slice(answerCounts, func(i, j int) bool {
+		if answerCounts[i] == nil && answerCounts[j] != nil {
+			return true
+		} else if answerCounts[i] != nil && answerCounts[j] == nil {
+			return false
+		} else if answerCounts[i] == nil && answerCounts[j] == nil {
+			return false
+		}
+		return answerCounts[i].Count < answerCounts[j].Count
+	})
+	if len(answerCounts) == 0 {
+		return "", true
+	} else if len(answerCounts) != 1 && answerCounts[0].Count == answerCounts[1].Count {
+		return "", true
+	}
+	i := slices.IndexFunc(poll.Answers, func(a discordgo.PollAnswer) bool {
+		return a.AnswerID == answerCounts[0].ID
+	})
+	return poll.Answers[i].Media.Text, false
 }
 
 type SetPollChannelCommand struct {

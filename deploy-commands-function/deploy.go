@@ -171,6 +171,13 @@ var commands = []*discordgo.ApplicationCommand{
 		DMPermission:             Ptr(false),
 	},
 	{
+		Name:                     "end-poll",
+		Description:              "End the current poll",
+		Type:                     discordgo.ChatApplicationCommand,
+		DefaultMemberPermissions: Ptr(int64(discordgo.PermissionAdministrator)),
+		DMPermission:             Ptr(false),
+	},
+	{
 		Name:                     "override-fow",
 		Description:              "Override the current Flavor of the Week",
 		Type:                     discordgo.ChatApplicationCommand,

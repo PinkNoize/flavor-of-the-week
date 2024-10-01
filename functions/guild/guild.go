@@ -8,10 +8,16 @@ import (
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
 )
 
+type PollInfo struct {
+	ChannelID string `firestore:"channel_id"`
+	MessageID string `firestore:"message_id"`
+}
+
 type innerGuild struct {
-	PollChannelID *string `firestore:"poll_channel_id"`
-	Fow           *string `firestore:"fow"`
-	FowCount      int     `firestore:"fow_count"`
+	PollChannelID *string   `firestore:"poll_channel_id"`
+	ActivePoll    *PollInfo `firestore:"active_poll"`
+	Fow           *string   `firestore:"fow"`
+	FowCount      int       `firestore:"fow_count"`
 }
 
 type Guild struct {
@@ -89,4 +95,34 @@ func (g *Guild) GetPollChannel(ctx context.Context) (*string, error) {
 		return nil, fmt.Errorf("load: %v", err)
 	}
 	return g.inner.PollChannelID, nil
+}
+
+func (g *Guild) GetActivePoll(ctx context.Context) (*PollInfo, error) {
+	err := g.load(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("load: %v", err)
+	}
+	return g.inner.ActivePoll, nil
+}
+
+func (g *Guild) ClearActivePoll(ctx context.Context) error {
+	_, err := g.docRef.Set(ctx, map[string]interface{}{
+		"active_poll": firestore.Delete,
+	}, firestore.MergeAll)
+	if err != nil {
+		return err
+	}
+	g.inner.ActivePoll = nil
+	return nil
+}
+
+func (g *Guild) SetActivePoll(ctx context.Context, pollInfo *PollInfo) error {
+	_, err := g.docRef.Set(ctx, map[string]interface{}{
+		"active_poll": pollInfo,
+	}, firestore.MergeAll)
+	if err != nil {
+		return err
+	}
+	g.inner.ActivePoll = pollInfo
+	return nil
 }

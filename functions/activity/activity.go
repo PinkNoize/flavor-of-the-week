@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"math/rand"
 	"slices"
 	"strings"
 	"time"
@@ -48,12 +49,28 @@ func (actErr *ActivityError) Error() string {
 	return string(actErr.Reason)
 }
 
+type randomHelper struct {
+	Num1 uint32
+	Num2 uint32
+	Num3 uint32
+}
+
+func NewRandomHelper() randomHelper {
+	return randomHelper{
+		Num1: rand.Uint32(),
+		Num2: rand.Uint32(),
+		Num3: rand.Uint32(),
+	}
+}
+
 type innerActivity struct {
-	Typ         ActivityType `firestore:"type"`
-	Name        string       `firestore:"name"`
-	SearchName  string       `firestore:"search_name"`
-	GuildID     string       `firestore:"guild_id"`
-	Nominations []string     `firestore:"nominations"`
+	Typ              ActivityType `firestore:"type"`
+	Name             string       `firestore:"name"`
+	SearchName       string       `firestore:"search_name"`
+	GuildID          string       `firestore:"guild_id"`
+	Nominations      []string     `firestore:"nominations"`
+	NominationsCount int          `firestore:"nominations_count"`
+	Random           randomHelper `firestore:"random"`
 }
 
 type Activity struct {
@@ -114,6 +131,7 @@ func Create(ctx context.Context, typ ActivityType, name, guildID string, cl *cli
 		Name:       name,
 		SearchName: strings.ToLower(name),
 		GuildID:    guildID,
+		Random:     NewRandomHelper(),
 	}
 	ctxzap.Info(ctx, fmt.Sprintf("Creating %v in %v", name, guildID))
 	wr, err := activityDoc.Create(ctx, &inAct)
@@ -150,32 +168,54 @@ func (act *Activity) RemoveActivity(ctx context.Context, force bool) error {
 }
 
 func (act *Activity) AddNomination(ctx context.Context, userId string) error {
+	if slices.Contains(act.inner.Nominations, userId) {
+		return nil
+	}
 	_, err := act.docRef.Update(ctx,
 		[]firestore.Update{
 			{
 				FieldPath: firestore.FieldPath{"nominations"},
 				Value:     firestore.ArrayUnion(userId),
 			},
+			{
+				FieldPath: firestore.FieldPath{"nominations_count"},
+				Value:     firestore.Increment(1),
+			},
+			{
+				FieldPath: firestore.FieldPath{"random"},
+				Value:     NewRandomHelper(),
+			},
 		},
 	)
-	if !slices.Contains(act.inner.Nominations, userId) {
-		act.inner.Nominations = append(act.inner.Nominations, userId)
-	}
+	act.inner.Nominations = append(act.inner.Nominations, userId)
+	act.inner.NominationsCount += 1
 	return err
 }
 
 func (act *Activity) RemoveNomination(ctx context.Context, userId string) error {
+	if !slices.Contains(act.inner.Nominations, userId) {
+		return nil
+	}
 	_, err := act.docRef.Update(ctx,
 		[]firestore.Update{
 			{
 				FieldPath: firestore.FieldPath{"nominations"},
 				Value:     firestore.ArrayRemove(userId),
 			},
+			{
+				FieldPath: firestore.FieldPath{"nominations"},
+				Value:     firestore.Increment(-1),
+			},
+			{
+				FieldPath: firestore.FieldPath{"random"},
+				Value:     NewRandomHelper(),
+			},
 		},
 	)
 	act.inner.Nominations = slices.DeleteFunc(act.inner.Nominations, func(cmp string) bool {
 		return cmp == userId
 	})
+	act.inner.NominationsCount -= 1
 	return err
 }
 
@@ -309,4 +349,56 @@ func AutocompleteActivities(ctx context.Context, guildID, text string, cl *clien
 		})
 	}
 	return results, nil
+}
+
+func ClearNominations(ctx context.Context, guildID string, cl *clients.Clients) error {
+	firestoreClient, err := cl.Firestore()
+	if err != nil {
+		return fmt.Errorf("Firestore: %v", err)
+	}
+	activityCollection, err := getCollection(cl)
+	if err != nil {
+		return fmt.Errorf("getCollection: %v", err)
+	}
+	// This query requires an index which is created in terraform
+	query := activityCollection.Select().WhereEntity(&firestore.PropertyFilter{
+		Path:     "nominations_count",
+		Operator: ">",
+		Value:    0,
+	}).WhereEntity(&firestore.PropertyFilter{
+		Path:     "guild_id",
+		Operator: "==",
+		Value:    guildID,
+	})
+	iter := query.Documents(ctx)
+	bulkWriter := firestoreClient.BulkWriter(ctx)
+	defer bulkWriter.End()
+
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("iter.Next: %v", err)
+		}
+		_, err = bulkWriter.Update(doc.Ref, []firestore.Update{
+			{
+				Path:  "nominations",
+				Value: []string{},
+			},
+			{
+				Path:  "nominations_count",
+				Value: 0,
+			},
+			{
+				FieldPath: firestore.FieldPath{"random"},
+				Value:     NewRandomHelper(),
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("Update: %v", err)
+		}
+	}
+	return nil
 }

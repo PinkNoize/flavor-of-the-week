@@ -43,7 +43,7 @@ func CommandPubSub(ctx context.Context, m PubSubMessage) error {
 			return
 		}
 		if response == nil {
-			response = utils.NewWebhookEdit("Internal Error")
+			response = utils.NewWebhookEdit("⚠️An oopsie occurred⚠️")
 		}
 		_, err = discordSession.InteractionResponseEdit(discordCmd.Interaction(), response)
 		if err != nil {
