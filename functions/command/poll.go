@@ -118,6 +118,7 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 	if err != nil || msg.Poll == nil {
 		return utils.NewWebhookEdit("⚠️ Unable to retrieve the poll"), fmt.Errorf("ChannelMessage: %v", err)
 	}
+	ctxzap.Info(ctx, "Poll results", zap.Any("poll", *msg.Poll))
 	if msg.Poll.Results == nil || !msg.Poll.Results.Finalized {
 		msg, err = s.PollExpire(pollID.ChannelID, pollID.MessageID)
 		if err != nil {
@@ -128,6 +129,7 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 			if err != nil || msg.Poll == nil {
 				return fmt.Errorf("ChannelMessage: %v", err)
 			}
+			ctxzap.Info(ctx, "Poll results", zap.Any("poll", *msg.Poll))
 			if msg.Poll.Results == nil || !msg.Poll.Results.Finalized || msg.Poll.Results.AnswerCounts == nil {
 				return fmt.Errorf("Poll not finalized")
 			}
