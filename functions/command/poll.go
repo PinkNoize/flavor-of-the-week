@@ -119,7 +119,7 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 		return utils.NewWebhookEdit("⚠️ Unable to retrieve the poll"), fmt.Errorf("ChannelMessage: %v", err)
 	}
 	ctxzap.Info(ctx, "Poll results", zap.Any("poll", *msg.Poll))
-	if msg.Poll.Results == nil || !msg.Poll.Results.Finalized {
+	if msg.Poll.Results == nil || !msg.Poll.Results.Finalized || msg.Poll.Results.AnswerCounts == nil {
 		msg, err = s.PollExpire(pollID.ChannelID, pollID.MessageID)
 		if err != nil {
 			return utils.NewWebhookEdit("⚠️ Unable to end the poll"), fmt.Errorf("PollExpire: %v", err)
@@ -129,13 +129,13 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 			if err != nil || msg.Poll == nil {
 				return fmt.Errorf("ChannelMessage: %v", err)
 			}
-			ctxzap.Info(ctx, "Poll results", zap.Any("poll", *msg.Poll))
 			if msg.Poll.Results == nil || !msg.Poll.Results.Finalized || msg.Poll.Results.AnswerCounts == nil {
 				return fmt.Errorf("Poll not finalized")
 			}
 			return nil
 		}
 		err = backoff.Retry(waitForResults, backoff.NewExponentialBackOff(backoff.WithInitialInterval(time.Millisecond*750), backoff.WithMaxElapsedTime(time.Second*30)))
+		ctxzap.Info(ctx, "Poll results", zap.Any("poll", *msg.Poll))
 		if err != nil {
 			return utils.NewWebhookEdit("Failed to end the poll"), fmt.Errorf("waitForResults: %v", err)
 		}
@@ -143,7 +143,6 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 			return utils.NewWebhookEdit("Failed to get the poll results"), nil
 		}
 	}
-	ctxzap.Info(ctx, "Poll results", zap.Any("poll", *msg.Poll))
 	winner, tie := determinePollWinner(msg.Poll)
 	var response *discordgo.WebhookEdit
 	if tie {
