@@ -13,6 +13,8 @@ import (
 	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
 	"github.com/bwmarrin/discordgo"
 	"github.com/cenkalti/backoff/v4"
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
+	"go.uber.org/zap"
 )
 
 type StartPollCommand struct {
@@ -136,25 +138,27 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 			return utils.NewWebhookEdit("Failed to end the poll"), fmt.Errorf("waitForResults: %v", err)
 		}
 	}
+	ctxzap.Info(ctx, "Poll results", zap.Any("poll", *msg.Poll))
 	winner, tie := determinePollWinner(msg.Poll)
+	var response *discordgo.WebhookEdit
 	if tie {
-		return utils.NewWebhookEdit("Ended the poll with a tie"), nil
+		response = utils.NewWebhookEdit("Ended the poll with a tie")
 	} else {
 		err = g.SetFow(ctx, winner)
 		if err != nil {
 			return nil, fmt.Errorf("SetFow: %v", err)
 		}
+		response = utils.NewWebhookEdit(fmt.Sprintf("Poll ended\nWinner: %v", winner))
 	}
 	err = g.ClearActivePoll(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("ClearActivePoll: %v", err)
 	}
-
 	err = activity.ClearNominations(ctx, c.GuildID, cl)
 	if err != nil {
 		return nil, fmt.Errorf("ClearNominations: %v", err)
 	}
-	return utils.NewWebhookEdit(fmt.Sprintf("Poll ended\nWinner: %v", winner)), nil
+	return response, nil
 }
 
 func determinePollWinner(poll *discordgo.Poll) (string, bool) {
