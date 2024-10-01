@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"slices"
 	"sort"
+	"time"
 
 	"github.com/PinkNoize/flavor-of-the-week/functions/activity"
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
 	"github.com/PinkNoize/flavor-of-the-week/functions/guild"
 	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
 	"github.com/bwmarrin/discordgo"
+	"github.com/cenkalti/backoff/v4"
 )
 
 type StartPollCommand struct {
@@ -119,8 +121,19 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 		if err != nil {
 			return utils.NewWebhookEdit("⚠️ Unable to end the poll"), fmt.Errorf("PollExpire: %v", err)
 		}
-		if msg.Poll.Results == nil || !msg.Poll.Results.Finalized {
-			return utils.NewWebhookEdit("Failed to end the poll"), nil
+		waitForResults := func() error {
+			msg, err = s.ChannelMessage(pollID.ChannelID, pollID.MessageID)
+			if err != nil || msg.Poll == nil {
+				return fmt.Errorf("ChannelMessage: %v", err)
+			}
+			if msg.Poll.Results == nil || !msg.Poll.Results.Finalized {
+				return fmt.Errorf("Poll not finalized")
+			}
+			return nil
+		}
+		err = backoff.Retry(waitForResults, backoff.NewExponentialBackOff(backoff.WithInitialInterval(time.Millisecond*750), backoff.WithMaxElapsedTime(30)))
+		if err != nil {
+			return utils.NewWebhookEdit("Failed to end the poll"), fmt.Errorf("waitForResults: %v", err)
 		}
 	}
 	winner, tie := determinePollWinner(msg.Poll)

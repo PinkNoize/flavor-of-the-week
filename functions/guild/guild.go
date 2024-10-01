@@ -106,9 +106,12 @@ func (g *Guild) GetActivePoll(ctx context.Context) (*PollInfo, error) {
 }
 
 func (g *Guild) ClearActivePoll(ctx context.Context) error {
-	_, err := g.docRef.Set(ctx, map[string]interface{}{
-		"active_poll": firestore.Delete,
-	}, firestore.MergeAll)
+	_, err := g.docRef.Update(ctx, []firestore.Update{
+		{
+			Path:  "active_poll",
+			Value: firestore.Delete,
+		},
+	})
 	if err != nil {
 		return err
 	}
