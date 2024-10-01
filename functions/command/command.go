@@ -184,6 +184,8 @@ func (c *DiscordCommand) fromApplicationCommand() (Command, error) {
 		return NewPoolListCommand(c.interaction.GuildID, name, actType, 0), nil
 	case "start-poll":
 		return NewStartPollCommand(c.interaction.GuildID), nil
+	case "end-poll":
+		return NewEndPollCommand(c.interaction.GuildID), nil
 	case "poll-channel":
 		if pass, missing := utils.VerifyOpts(args, []string{"channel"}); !pass {
 			return nil, fmt.Errorf("missing options: %v", missing)
