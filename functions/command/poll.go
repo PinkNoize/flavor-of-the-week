@@ -133,9 +133,12 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 			}
 			return nil
 		}
-		err = backoff.Retry(waitForResults, backoff.NewExponentialBackOff(backoff.WithInitialInterval(time.Millisecond*750), backoff.WithMaxElapsedTime(30)))
+		err = backoff.Retry(waitForResults, backoff.NewExponentialBackOff(backoff.WithInitialInterval(time.Millisecond*750), backoff.WithMaxElapsedTime(time.Second*30)))
 		if err != nil {
 			return utils.NewWebhookEdit("Failed to end the poll"), fmt.Errorf("waitForResults: %v", err)
+		}
+		if msg.Poll.Results == nil || !msg.Poll.Results.Finalized || msg.Poll.Results.AnswerCounts == nil {
+			return utils.NewWebhookEdit("Failed to get the poll results"), nil
 		}
 	}
 	ctxzap.Info(ctx, "Poll results", zap.Any("poll", *msg.Poll))
