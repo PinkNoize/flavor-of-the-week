@@ -203,7 +203,7 @@ func (act *Activity) RemoveNomination(ctx context.Context, userId string) error 
 				Value:     firestore.ArrayRemove(userId),
 			},
 			{
-				FieldPath: firestore.FieldPath{"nominations"},
+				FieldPath: firestore.FieldPath{"nominations_count"},
 				Value:     firestore.Increment(-1),
 			},
 			{
