@@ -128,7 +128,7 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 			if err != nil || msg.Poll == nil {
 				return fmt.Errorf("ChannelMessage: %v", err)
 			}
-			if msg.Poll.Results == nil || !msg.Poll.Results.Finalized {
+			if msg.Poll.Results == nil || !msg.Poll.Results.Finalized || msg.Poll.Results.AnswerCounts == nil {
 				return fmt.Errorf("Poll not finalized")
 			}
 			return nil

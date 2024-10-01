@@ -121,6 +121,22 @@ resource "google_firestore_index" "nominations-search-index" {
   }
 }
 
+resource "google_firestore_index" "nominations-clear-index" {
+  project    = var.project
+  database   = "(default)"
+  collection = "flavor-of-the-week"
+
+  fields {
+    field_path = "guild_id"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "nominations_count"
+    order      = "ASCENDING"
+  }
+}
+
 # Cloud Functions role
 
 resource "google_service_account" "cloud_func_service_account" {
