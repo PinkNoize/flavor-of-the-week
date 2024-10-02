@@ -351,6 +351,82 @@ func AutocompleteActivities(ctx context.Context, guildID, text string, cl *clien
 	return results, nil
 }
 
+func GetTopNominations(ctx context.Context, guildID string, n int, cl *clients.Clients) ([]string, error) {
+	activityCollection, err := getCollection(cl)
+	if err != nil {
+		return nil, fmt.Errorf("getCollection: %v", err)
+	}
+	// This query requires an index which is created in terraform
+	query := activityCollection.Select("name").WhereEntity(&firestore.PropertyFilter{
+		Path:     "nominations_count",
+		Operator: ">",
+		Value:    0,
+	}).WhereEntity(&firestore.PropertyFilter{
+		Path:     "guild_id",
+		Operator: "==",
+		Value:    guildID,
+	}).OrderBy("nominations_count", firestore.Desc).Limit(n)
+	iter := query.Documents(ctx)
+	defer iter.Stop()
+
+	results := make([]string, 0, n)
+	for i := 0; i < n; i++ {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("iter.Next: %v", err)
+		}
+		var inAct innerActivity
+		err = doc.DataTo(&inAct)
+		if err != nil {
+			return nil, fmt.Errorf("doc.DataTo: %v", err)
+		}
+		results = append(results, inAct.Name)
+	}
+	return results, nil
+}
+
+func GetRandomActivites(ctx context.Context, guildID string, n int, cl *clients.Clients) ([]string, error) {
+	activityCollection, err := getCollection(cl)
+	if err != nil {
+		return nil, fmt.Errorf("getCollection: %v", err)
+	}
+	randomNumber := rand.Uint32()
+	randomSelector := (rand.Int() % 3) + 1
+	// This query requires an index which is created in terraform
+	query := activityCollection.Select("name").WhereEntity(&firestore.PropertyFilter{
+		Path:     fmt.Sprintf("random.Num%v", randomSelector),
+		Operator: ">=",
+		Value:    randomNumber,
+	}).WhereEntity(&firestore.PropertyFilter{
+		Path:     "guild_id",
+		Operator: "==",
+		Value:    guildID,
+	}).OrderBy(fmt.Sprintf("random.Num%v", randomSelector), firestore.Asc).Limit(n)
+	iter := query.Documents(ctx)
+	defer iter.Stop()
+
+	results := make([]string, 0, n)
+	for i := 0; i < n; i++ {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("iter.Next: %v", err)
+		}
+		var inAct innerActivity
+		err = doc.DataTo(&inAct)
+		if err != nil {
+			return nil, fmt.Errorf("doc.DataTo: %v", err)
+		}
+		results = append(results, inAct.Name)
+	}
+	return results, nil
+}
+
 func ClearNominations(ctx context.Context, guildID string, cl *clients.Clients) error {
 	firestoreClient, err := cl.Firestore()
 	if err != nil {

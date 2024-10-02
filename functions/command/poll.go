@@ -17,6 +17,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const MAX_POLL_ENTRIES int = 7
+
 type StartPollCommand struct {
 	GuildID string
 }
@@ -52,24 +54,20 @@ func (c *StartPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*d
 		return nil, fmt.Errorf("Discord: %v", err)
 	}
 
+	// Generate poll entries
+	entries, err := GeneratePollEntries(ctx, g, cl)
+	if err != nil {
+		return nil, fmt.Errorf("GeneratePollEntries: %v", err)
+	}
+	// TODO: Rotate random numbers on poll entries? This may be overkill
+
 	msg, err := s.ChannelMessageSendComplex(*chanID, &discordgo.MessageSend{
 		Poll: &discordgo.Poll{
 			Question: discordgo.PollMedia{
 				Text: "What should the flavor of the week be?",
 			},
-			Answers: []discordgo.PollAnswer{
-				{
-					Media: &discordgo.PollMedia{
-						Text: "First",
-					},
-				},
-				{
-					Media: &discordgo.PollMedia{
-						Text: "Two",
-					},
-				},
-			},
-			AllowMultiselect: false,
+			Answers:          entries,
+			AllowMultiselect: true,
 			LayoutType:       discordgo.PollLayoutTypeDefault,
 			Duration:         1,
 		},
@@ -86,6 +84,57 @@ func (c *StartPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*d
 	}
 	msgLink := fmt.Sprintf("https://discord.com/channels/%v/%v/%v", c.GuildID, *chanID, msg.ID)
 	return utils.NewWebhookEdit(fmt.Sprintf("Poll created: %v", msgLink)), nil
+}
+
+func GeneratePollEntries(ctx context.Context, guild *guild.Guild, cl *clients.Clients) ([]discordgo.PollAnswer, error) {
+	answers := map[string]int{}
+
+	fow, err := guild.GetFow(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("GetFow: %v", err)
+	}
+	if fow != nil {
+		answers[*fow] = 1
+	}
+
+	// Add top nominations
+	nominations, err := activity.GetTopNominations(ctx, guild.GetGuildId(), MAX_POLL_ENTRIES-len(answers), cl)
+	if err != nil {
+		return nil, fmt.Errorf("GetTopNominations: %v", err)
+	}
+
+	for _, nom := range nominations {
+		answers[nom] += 1
+	}
+	// Now pick random entries
+out:
+	for len(answers) < MAX_POLL_ENTRIES {
+		randomsChoices, err := activity.GetRandomActivites(ctx, guild.GetGuildId(), MAX_POLL_ENTRIES-len(answers), cl)
+		if err != nil {
+			return nil, fmt.Errorf("GetRandomActivities: %v", err)
+		}
+		for _, choice := range randomsChoices {
+			answers[choice] += 1
+		}
+
+		// Check if we are repeating which is indicative of not enough answers in the pool to fill a poll
+		for _, count := range answers {
+			if count > 5 {
+				break out
+			}
+		}
+	}
+
+	ctxzap.Info(ctx, fmt.Sprintf("Generated poll entries: %v", answers))
+	results := make([]discordgo.PollAnswer, 0, len(answers))
+	for k, _ := range answers {
+		results = append(results, discordgo.PollAnswer{
+			Media: &discordgo.PollMedia{
+				Text: k,
+			},
+		})
+	}
+	return results, nil
 }
 
 type EndPollCommand struct {
@@ -143,7 +192,7 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 			return utils.NewWebhookEdit("Failed to get the poll results"), nil
 		}
 	}
-	winner, tie := determinePollWinner(ctx, msg.Poll)
+	winner, tie := determinePollWinner(msg.Poll)
 	var response *discordgo.WebhookEdit
 	if tie {
 		response = utils.NewWebhookEdit("Ended the poll with a tie")
@@ -165,7 +214,7 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 	return response, nil
 }
 
-func determinePollWinner(ctx context.Context, poll *discordgo.Poll) (string, bool) {
+func determinePollWinner(poll *discordgo.Poll) (string, bool) {
 	answerCounts := poll.Results.AnswerCounts
 	slices.SortFunc(answerCounts, func(a, b *discordgo.PollAnswerCount) int {
 		if a == nil && b != nil {
@@ -182,8 +231,6 @@ func determinePollWinner(ctx context.Context, poll *discordgo.Poll) (string, boo
 	} else if len(answerCounts) != 1 && answerCounts[0].Count == answerCounts[1].Count {
 		return "", true
 	}
-	//TODO: Remove me
-	ctxzap.Info(ctx, "sorted answers", zap.Any("answerCounts", answerCounts))
 	i := slices.IndexFunc(poll.Answers, func(a discordgo.PollAnswer) bool {
 		return a.AnswerID == answerCounts[0].ID
 	})
