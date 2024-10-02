@@ -143,7 +143,7 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 			return utils.NewWebhookEdit("Failed to get the poll results"), nil
 		}
 	}
-	winner, tie := determinePollWinner(msg.Poll)
+	winner, tie := determinePollWinner(ctx, msg.Poll)
 	var response *discordgo.WebhookEdit
 	if tie {
 		response = utils.NewWebhookEdit("Ended the poll with a tie")
@@ -165,7 +165,7 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 	return response, nil
 }
 
-func determinePollWinner(poll *discordgo.Poll) (string, bool) {
+func determinePollWinner(ctx context.Context, poll *discordgo.Poll) (string, bool) {
 	answerCounts := poll.Results.AnswerCounts
 	slices.SortFunc(answerCounts, func(a, b *discordgo.PollAnswerCount) int {
 		if a == nil && b != nil {
@@ -175,7 +175,7 @@ func determinePollWinner(poll *discordgo.Poll) (string, bool) {
 		} else if a == nil && b == nil {
 			return 0
 		}
-		return cmp.Compare(a.Count, b.Count)
+		return -cmp.Compare(a.Count, b.Count)
 	})
 	if len(answerCounts) == 0 {
 		return "", true
@@ -183,7 +183,7 @@ func determinePollWinner(poll *discordgo.Poll) (string, bool) {
 		return "", true
 	}
 	//TODO: Remove me
-	ctxzap.Info(context.Background(), "sorted answers", zap.Any("answerCounts", answerCounts))
+	ctxzap.Info(ctx, "sorted answers", zap.Any("answerCounts", answerCounts))
 	i := slices.IndexFunc(poll.Answers, func(a discordgo.PollAnswer) bool {
 		return a.AnswerID == answerCounts[0].ID
 	})
