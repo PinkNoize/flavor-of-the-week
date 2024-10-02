@@ -52,3 +52,5 @@ require (
 	google.golang.org/genproto v0.0.0-20240903143218-8af14fe29dc1 // indirect
 	google.golang.org/grpc v1.66.0
 )
+
+replace github.com/bwmarrin/discordgo => github.com/PinkNoize/discordgo v0.0.0-20241002030129-edfeb5a0adc2
