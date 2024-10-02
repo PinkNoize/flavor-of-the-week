@@ -1,10 +1,10 @@
 package command
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"slices"
-	"sort"
 	"time"
 
 	"github.com/PinkNoize/flavor-of-the-week/functions/activity"
@@ -167,21 +167,23 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 
 func determinePollWinner(poll *discordgo.Poll) (string, bool) {
 	answerCounts := poll.Results.AnswerCounts
-	sort.Slice(answerCounts, func(i, j int) bool {
-		if answerCounts[i] == nil && answerCounts[j] != nil {
-			return true
-		} else if answerCounts[i] != nil && answerCounts[j] == nil {
-			return false
-		} else if answerCounts[i] == nil && answerCounts[j] == nil {
-			return false
+	slices.SortFunc(answerCounts, func(a, b *discordgo.PollAnswerCount) int {
+		if a == nil && b != nil {
+			return 1
+		} else if a != nil && b == nil {
+			return -1
+		} else if a == nil && b == nil {
+			return 0
 		}
-		return answerCounts[i].Count < answerCounts[j].Count
+		return cmp.Compare(a.Count, b.Count)
 	})
 	if len(answerCounts) == 0 {
 		return "", true
 	} else if len(answerCounts) != 1 && answerCounts[0].Count == answerCounts[1].Count {
 		return "", true
 	}
+	//TODO: Remove me
+	ctxzap.Info(context.Background(), "sorted answers", zap.Any("answerCounts", answerCounts))
 	i := slices.IndexFunc(poll.Answers, func(a discordgo.PollAnswer) bool {
 		return a.AnswerID == answerCounts[0].ID
 	})
