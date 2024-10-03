@@ -6,6 +6,7 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 )
 
 type PollInfo struct {
@@ -118,6 +119,7 @@ func (g *Guild) GetActivePoll(ctx context.Context) (*PollInfo, error) {
 }
 
 func (g *Guild) ClearActivePoll(ctx context.Context) error {
+	ctxzap.Info(ctx, "Clearing active poll")
 	_, err := g.docRef.Update(ctx, []firestore.Update{
 		{
 			Path:  "active_poll",

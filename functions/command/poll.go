@@ -170,7 +170,7 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 	}
 	msg, err := s.ChannelMessage(pollID.ChannelID, pollID.MessageID)
 	if err != nil {
-		if restErr, ok := err.(discordgo.RESTError); ok && restErr.Response.StatusCode == http.StatusNotFound {
+		if restErr, ok := err.(*discordgo.RESTError); ok && restErr.Response.StatusCode == http.StatusNotFound {
 			err = g.ClearActivePoll(ctx)
 			if err != nil {
 				return nil, fmt.Errorf("ClearActivePoll: %v", err)
@@ -179,7 +179,7 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 		return utils.NewWebhookEdit("⚠️ Unable to retrieve the poll"), fmt.Errorf("ChannelMessage: %v", err)
 	}
 	if msg.Poll == nil {
-		return utils.NewWebhookEdit("⚠️ Unable to retrieve the poll"), fmt.Errorf("Missing poll")
+		return utils.NewWebhookEdit("⚠️ No poll associated with the message"), fmt.Errorf("Missing poll")
 	}
 	ctxzap.Info(ctx, "Poll results", zap.Any("poll", *msg.Poll))
 	if msg.Poll.Results == nil || !msg.Poll.Results.Finalized || msg.Poll.Results.AnswerCounts == nil {
