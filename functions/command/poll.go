@@ -97,6 +97,7 @@ func GeneratePollEntries(ctx context.Context, guild *guild.Guild, cl *clients.Cl
 		answers[*fow] = 1
 	}
 
+	ctxzap.Info(ctx, "Getting top nominations")
 	// Add top nominations
 	nominations, err := activity.GetTopNominations(ctx, guild.GetGuildId(), MAX_POLL_ENTRIES-len(answers), cl)
 	if err != nil {
@@ -107,9 +108,11 @@ func GeneratePollEntries(ctx context.Context, guild *guild.Guild, cl *clients.Cl
 		answers[nom] += 1
 	}
 	// Now pick random entries
+	loop_count := 0
 out:
-	for len(answers) < MAX_POLL_ENTRIES {
-		randomsChoices, err := activity.GetRandomActivites(ctx, guild.GetGuildId(), MAX_POLL_ENTRIES-len(answers), cl)
+	for len(answers) < MAX_POLL_ENTRIES && loop_count < 5 {
+		ctxzap.Info(ctx, fmt.Sprintf("Getting random activities nominations. Try %v", loop_count))
+		randomsChoices, err := activity.GetRandomActivities(ctx, guild.GetGuildId(), MAX_POLL_ENTRIES-len(answers), cl)
 		if err != nil {
 			return nil, fmt.Errorf("GetRandomActivities: %v", err)
 		}
@@ -123,6 +126,7 @@ out:
 				break out
 			}
 		}
+		loop_count += 1
 	}
 
 	ctxzap.Info(ctx, fmt.Sprintf("Generated poll entries: %v", answers))

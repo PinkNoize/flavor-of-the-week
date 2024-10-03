@@ -386,7 +386,7 @@ func GetTopNominations(ctx context.Context, guildID string, n int, cl *clients.C
 	return results, nil
 }
 
-func GetRandomActivites(ctx context.Context, guildID string, n int, cl *clients.Clients) ([]string, error) {
+func GetRandomActivities(ctx context.Context, guildID string, n int, cl *clients.Clients) ([]string, error) {
 	activityCollection, err := getCollection(cl)
 	if err != nil {
 		return nil, fmt.Errorf("getCollection: %v", err)
