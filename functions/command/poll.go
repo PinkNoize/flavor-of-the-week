@@ -14,6 +14,7 @@ import (
 	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
 	"github.com/bwmarrin/discordgo"
 	"github.com/cenkalti/backoff/v4"
+	"github.com/elliotchance/orderedmap/v2"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"go.uber.org/zap"
 )
@@ -88,42 +89,46 @@ func (c *StartPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*d
 }
 
 func GeneratePollEntries(ctx context.Context, guild *guild.Guild, cl *clients.Clients) ([]discordgo.PollAnswer, error) {
-	answers := map[string]int{}
+	answers := orderedmap.NewOrderedMap[string, int]()
 
 	fow, err := guild.GetFow(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("GetFow: %v", err)
 	}
 	if fow != nil {
-		answers[*fow] = 1
+		answers.Set(*fow, 1)
 	}
 
 	ctxzap.Info(ctx, "Getting top nominations")
 	// Add top nominations
-	nominations, err := activity.GetTopNominations(ctx, guild.GetGuildId(), MAX_POLL_ENTRIES-len(answers), cl)
+	nominations, err := activity.GetTopNominations(ctx, guild.GetGuildId(), MAX_POLL_ENTRIES-answers.Len(), cl)
 	if err != nil {
 		return nil, fmt.Errorf("GetTopNominations: %v", err)
 	}
 
 	for _, nom := range nominations {
-		answers[nom] += 1
+		answers.Set(nom,
+			answers.GetOrDefault(nom, 0)+1,
+		)
 	}
 	// Now pick random entries
 	loop_count := 0
 out:
-	for len(answers) < MAX_POLL_ENTRIES && loop_count < 5 {
+	for answers.Len() < MAX_POLL_ENTRIES && loop_count < 5 {
 		ctxzap.Info(ctx, fmt.Sprintf("Getting random activities nominations. Try %v", loop_count))
-		randomsChoices, err := activity.GetRandomActivities(ctx, guild.GetGuildId(), MAX_POLL_ENTRIES-len(answers), cl)
+		randomsChoices, err := activity.GetRandomActivities(ctx, guild.GetGuildId(), MAX_POLL_ENTRIES-answers.Len(), cl)
 		if err != nil {
 			return nil, fmt.Errorf("GetRandomActivities: %v", err)
 		}
 		for _, choice := range randomsChoices {
-			answers[choice] += 1
+			answers.Set(choice,
+				answers.GetOrDefault(choice, 0)+1,
+			)
 		}
 
 		// Check if we are repeating which is indicative of not enough answers in the pool to fill a poll
-		for _, count := range answers {
-			if count > 5 {
+		for el := answers.Back(); el != nil; el = el.Prev() {
+			if el.Value > 5 {
 				break out
 			}
 		}
@@ -131,11 +136,11 @@ out:
 	}
 
 	ctxzap.Info(ctx, fmt.Sprintf("Generated poll entries: %v", answers))
-	results := make([]discordgo.PollAnswer, 0, len(answers))
-	for k, _ := range answers {
+	results := make([]discordgo.PollAnswer, 0, answers.Len())
+	for el := answers.Front(); el != nil; el = el.Next() {
 		results = append(results, discordgo.PollAnswer{
 			Media: &discordgo.PollMedia{
-				Text: k,
+				Text: el.Key,
 			},
 		})
 	}
@@ -171,7 +176,7 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 	msg, err := s.ChannelMessage(pollID.ChannelID, pollID.MessageID)
 	if err != nil {
 		if restErr, ok := err.(*discordgo.RESTError); ok && restErr.Response.StatusCode == http.StatusNotFound {
-			err = g.ClearActivePoll(ctx)
+			err := g.ClearActivePoll(ctx)
 			if err != nil {
 				return nil, fmt.Errorf("ClearActivePoll: %v", err)
 			}

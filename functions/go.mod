@@ -41,6 +41,7 @@ require (
 	cloud.google.com/go/pubsub v1.43.0
 	github.com/bwmarrin/discordgo v0.28.2-0.20240729124523-41a66e5f151f
 	github.com/cenkalti/backoff/v4 v4.3.0
+	github.com/elliotchance/orderedmap/v2 v2.4.0
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/josestg/lazy v0.0.0-20230114190824-2bace4761b02
 	go.uber.org/multierr v1.10.0 // indirect
