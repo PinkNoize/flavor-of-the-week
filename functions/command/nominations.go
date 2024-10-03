@@ -106,7 +106,7 @@ func (c *NominationListCommand) Execute(ctx context.Context, cl *clients.Clients
 					Type:        discordgo.EmbedTypeImage,
 					Description: "You got no nominations",
 					Image: &discordgo.MessageEmbedImage{
-						URL: "https://discord.com/channels/561082316689244160/561082316689244162/1291267984446324736",
+						URL: "https://i.imgflip.com/95guyj.jpg",
 					},
 				},
 			},
