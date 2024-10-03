@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"net/http"
 	"slices"
 	"time"
 
@@ -168,8 +169,17 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 		return nil, fmt.Errorf("Discord: %v", err)
 	}
 	msg, err := s.ChannelMessage(pollID.ChannelID, pollID.MessageID)
-	if err != nil || msg.Poll == nil {
+	if err != nil {
+		if restErr, ok := err.(discordgo.RESTError); ok && restErr.Response.StatusCode == http.StatusNotFound {
+			err = g.ClearActivePoll(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("ClearActivePoll: %v", err)
+			}
+		}
 		return utils.NewWebhookEdit("⚠️ Unable to retrieve the poll"), fmt.Errorf("ChannelMessage: %v", err)
+	}
+	if msg.Poll == nil {
+		return utils.NewWebhookEdit("⚠️ Unable to retrieve the poll"), fmt.Errorf("Missing poll")
 	}
 	ctxzap.Info(ctx, "Poll results", zap.Any("poll", *msg.Poll))
 	if msg.Poll.Results == nil || !msg.Poll.Results.Finalized || msg.Poll.Results.AnswerCounts == nil {
