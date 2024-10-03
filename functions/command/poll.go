@@ -16,7 +16,6 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/elliotchance/orderedmap/v2"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
-	"go.uber.org/zap"
 )
 
 const MAX_POLL_ENTRIES int = 7
@@ -186,7 +185,6 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 	if msg.Poll == nil {
 		return utils.NewWebhookEdit("⚠️ No poll associated with the message"), fmt.Errorf("Missing poll")
 	}
-	ctxzap.Info(ctx, "Poll results", zap.Any("poll", *msg.Poll))
 	if msg.Poll.Results == nil || !msg.Poll.Results.Finalized || msg.Poll.Results.AnswerCounts == nil {
 		msg, err = s.PollExpire(pollID.ChannelID, pollID.MessageID)
 		if err != nil {
@@ -203,7 +201,6 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 			return nil
 		}
 		err = backoff.Retry(waitForResults, backoff.NewExponentialBackOff(backoff.WithInitialInterval(time.Millisecond*750), backoff.WithMaxElapsedTime(time.Second*30)))
-		ctxzap.Info(ctx, "Poll results", zap.Any("poll", *msg.Poll))
 		if err != nil {
 			return utils.NewWebhookEdit("Failed to end the poll"), fmt.Errorf("waitForResults: %v", err)
 		}

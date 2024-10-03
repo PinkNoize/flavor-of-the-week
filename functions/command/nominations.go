@@ -98,5 +98,19 @@ func (c *NominationListCommand) Execute(ctx context.Context, cl *clients.Clients
 	customID := utils.NewCustomID("nominations", utils.Filter{
 		Name: c.Name,
 	}, c.Page)
-	return utils.BuildDiscordPage(entries, customID, lastPage), nil
+	edit := utils.BuildDiscordPage(entries, customID, lastPage)
+	if edit.Embeds != nil && len(*edit.Embeds) == 0 {
+		return &discordgo.WebhookEdit{
+			Embeds: &[]*discordgo.MessageEmbed{
+				{
+					Type:        discordgo.EmbedTypeImage,
+					Description: "You got no nominations",
+					Image: &discordgo.MessageEmbedImage{
+						URL: "https://discord.com/channels/561082316689244160/561082316689244162/1291267984446324736",
+					},
+				},
+			},
+		}, nil
+	}
+	return edit, nil
 }
