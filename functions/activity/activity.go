@@ -50,16 +50,14 @@ func (actErr *ActivityError) Error() string {
 }
 
 type randomHelper struct {
-	Num1 uint32
-	Num2 uint32
-	Num3 uint32
+	Num1 uint32 `firestore:"num_1"`
+	Num2 uint32 `firestore:"num_2"`
 }
 
 func NewRandomHelper() randomHelper {
 	return randomHelper{
 		Num1: rand.Uint32(),
 		Num2: rand.Uint32(),
-		Num3: rand.Uint32(),
 	}
 }
 
@@ -394,17 +392,18 @@ func GetRandomActivites(ctx context.Context, guildID string, n int, cl *clients.
 		return nil, fmt.Errorf("getCollection: %v", err)
 	}
 	randomNumber := rand.Uint32()
-	randomSelector := (rand.Int() % 3) + 1
+	randomSelector := (rand.Int() % 2) + 1
+	randomPath := fmt.Sprintf("random.num_%v", randomSelector)
 	// This query requires an index which is created in terraform
 	query := activityCollection.Select("name").WhereEntity(&firestore.PropertyFilter{
-		Path:     fmt.Sprintf("random.Num%v", randomSelector),
+		Path:     randomPath,
 		Operator: ">=",
 		Value:    randomNumber,
 	}).WhereEntity(&firestore.PropertyFilter{
 		Path:     "guild_id",
 		Operator: "==",
 		Value:    guildID,
-	}).OrderBy(fmt.Sprintf("random.Num%v", randomSelector), firestore.Asc).Limit(n)
+	}).OrderBy(randomPath, firestore.Asc).Limit(n)
 	iter := query.Documents(ctx)
 	defer iter.Stop()
 
@@ -437,6 +436,7 @@ func ClearNominations(ctx context.Context, guildID string, cl *clients.Clients) 
 		return fmt.Errorf("getCollection: %v", err)
 	}
 	// This query requires an index which is created in terraform
+	// Sorted in descending to use the same index as top nominations
 	query := activityCollection.Select().WhereEntity(&firestore.PropertyFilter{
 		Path:     "nominations_count",
 		Operator: ">",
@@ -445,7 +445,7 @@ func ClearNominations(ctx context.Context, guildID string, cl *clients.Clients) 
 		Path:     "guild_id",
 		Operator: "==",
 		Value:    guildID,
-	})
+	}).OrderBy("nominations_count", firestore.Desc)
 	iter := query.Documents(ctx)
 	bulkWriter := firestoreClient.BulkWriter(ctx)
 	defer bulkWriter.End()
