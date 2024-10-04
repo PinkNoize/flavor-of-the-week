@@ -35,7 +35,7 @@ func init() {
 	if err != nil {
 		zapSlogger.Fatalf("Failed to decode public key: %v", err)
 	}
-	clientLoader = clients.New(ctx, projectID)
+	clientLoader = clients.New(ctx, projectID, os.Getenv("DISCORD_TOKEN"), os.Getenv("RAWG_TOKEN"))
 }
 
 func setup_loggers() (*zap.Logger, *zap.SugaredLogger) {

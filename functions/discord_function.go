@@ -10,10 +10,14 @@ import (
 
 	"cloud.google.com/go/pubsub"
 
+	"github.com/PinkNoize/flavor-of-the-week/functions/activity"
 	"github.com/PinkNoize/flavor-of-the-week/functions/command"
+	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
 	"github.com/bwmarrin/discordgo"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 )
+
+const MIN_AUTOCOMPLETE_CHARS int = 2
 
 func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 	var err error
@@ -42,14 +46,15 @@ func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Log command
+	cmd.LogCommand(ctx)
+	// Add command context to ctx
+	ctx = cmd.ToContext(ctx)
+
 	switch cmd.Type() {
 	case discordgo.InteractionPing:
 		handlePing(ctx, w)
-	case discordgo.InteractionApplicationCommand:
-		// Log command
-		cmd.LogCommand(ctx)
-		// Add command context to ctx
-		ctx = cmd.ToContext(ctx)
+	case discordgo.InteractionApplicationCommand, discordgo.InteractionMessageComponent:
 		err = forwardCommand(ctx, &cmd)
 		if err != nil {
 			slogger.Errorw("Failed to forward command",
@@ -58,22 +63,48 @@ func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		slogger.Info("Deferring response...")
-		err = writeDeferredResponse(w)
+		if cmd.Type() == discordgo.InteractionApplicationCommand {
+			err = writeDeferredResponse(w, discordgo.InteractionResponseDeferredChannelMessageWithSource)
+		} else if cmd.Type() == discordgo.InteractionMessageComponent {
+			err = writeDeferredResponse(w, discordgo.InteractionResponseDeferredMessageUpdate)
+		}
 		if err != nil {
 			slogger.Errorw("Failed to return deferred response",
 				"error", err,
 			)
 			return
 		}
-	case discordgo.InteractionMessageComponent:
-		cmd.LogMessageComponent(ctx)
-		ctx = cmd.ToContext(ctx)
-		ctxzap.Error(ctx, "Paging not implemented")
-		http.Error(w, "Paging not implemented", http.StatusNotImplemented)
-
 	case discordgo.InteractionApplicationCommandAutocomplete:
-		slogger.Error("Autocomplete not implemented")
-		http.Error(w, "Autocomplete not implemented", http.StatusNotImplemented)
+		autocompleteResults := []*discordgo.ApplicationCommandOptionChoice{}
+		switch cmd.CommandName() {
+		case "remove", "pool", "force-remove", "override-fow", "nominations":
+			commandData := cmd.Interaction().ApplicationCommandData()
+			cmd_args := utils.OptionsToMap(commandData.Options)
+			if cmd.CommandName() == "nominations" {
+				subcmd := commandData.Options[0]
+				cmd_args = utils.OptionsToMap(subcmd.Options)
+			}
+			if nameOpt, ok := cmd_args["name"]; ok && nameOpt.Focused {
+				userText := nameOpt.StringValue()
+				if len(userText) >= MIN_AUTOCOMPLETE_CHARS {
+					autocompleteResults, err = activity.AutocompleteActivities(ctx, cmd.Interaction().GuildID, userText, clientLoader)
+					if err != nil {
+						ctxzap.Error(ctx, fmt.Sprintf("AutocompleteActivities: %v", err))
+						break
+					}
+				}
+			}
+		default:
+			slogger.Error("Autocomplete not implemented")
+			http.Error(w, "Autocomplete not implemented", http.StatusNotImplemented)
+		}
+		err = writeAutocompleteResults(w, autocompleteResults)
+		if err != nil {
+			slogger.Errorw("Failed to return autocomplete response",
+				"error", err,
+			)
+			return
+		}
 	default:
 		slogger.Errorw("Unknown Interaction Type",
 			"interactionType", cmd.Type(),
@@ -106,9 +137,9 @@ func forwardCommand(ctx context.Context, command *command.DiscordCommand) error 
 	return nil
 }
 
-func writeDeferredResponse(w http.ResponseWriter) error {
+func writeDeferredResponse(w http.ResponseWriter, typ discordgo.InteractionResponseType) error {
 	response := discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource, // Deferred response
+		Type: typ, // Deferred response
 		Data: &discordgo.InteractionResponseData{
 			Content: "...",
 			Flags:   discordgo.MessageFlagsEphemeral,
@@ -120,6 +151,23 @@ func writeDeferredResponse(w http.ResponseWriter) error {
 	err := json.NewEncoder(w).Encode(response)
 	if err != nil {
 		return fmt.Errorf("writeDeferredResponse: jsonEncoder: %v", err)
+	}
+	return nil
+}
+
+func writeAutocompleteResults(w http.ResponseWriter, results []*discordgo.ApplicationCommandOptionChoice) error {
+	response := discordgo.InteractionResponse{
+		Type: discordgo.InteractionApplicationCommandAutocompleteResult,
+		Data: &discordgo.InteractionResponseData{
+			Choices: results,
+		},
+	}
+
+	// MUST SET HEADER BEFORE CONTENT
+	w.Header().Set("Content-Type", "application/json")
+	err := json.NewEncoder(w).Encode(response)
+	if err != nil {
+		return fmt.Errorf("jsonEncoder: %v", err)
 	}
 	return nil
 }

@@ -4,12 +4,15 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"math/rand"
 	"slices"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/firestore"
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
 	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
+	"github.com/bwmarrin/discordgo"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
@@ -17,6 +20,7 @@ import (
 )
 
 const PAGE_SIZE int = 5
+const MAX_AUTOCOMPLETE_ENTRIES int = 5
 
 type ActivityType string
 
@@ -45,12 +49,26 @@ func (actErr *ActivityError) Error() string {
 	return string(actErr.Reason)
 }
 
+type randomHelper struct {
+	Num1 uint32 `firestore:"num_1"`
+	Num2 uint32 `firestore:"num_2"`
+}
+
+func NewRandomHelper() randomHelper {
+	return randomHelper{
+		Num1: rand.Uint32(),
+		Num2: rand.Uint32(),
+	}
+}
+
 type innerActivity struct {
-	Typ         ActivityType `firestore:"type"`
-	Name        string       `firestore:"name"`
-	GuildID     string       `firestore:"guild_id"`
-	Nominations []string     `firestore:"nominations"`
-	IsFow       bool         `firestore:"is_fow"`
+	Typ              ActivityType `firestore:"type"`
+	Name             string       `firestore:"name"`
+	SearchName       string       `firestore:"search_name"`
+	GuildID          string       `firestore:"guild_id"`
+	Nominations      []string     `firestore:"nominations"`
+	NominationsCount int          `firestore:"nominations_count"`
+	Random           randomHelper `firestore:"random"`
 }
 
 type Activity struct {
@@ -107,9 +125,11 @@ func Create(ctx context.Context, typ ActivityType, name, guildID string, cl *cli
 	docName := generateName(guildID, name)
 	activityDoc := activityCollection.Doc(docName)
 	inAct := innerActivity{
-		Typ:     typ,
-		Name:    name,
-		GuildID: guildID,
+		Typ:        typ,
+		Name:       name,
+		SearchName: strings.ToLower(name),
+		GuildID:    guildID,
+		Random:     NewRandomHelper(),
 	}
 	ctxzap.Info(ctx, fmt.Sprintf("Creating %v in %v", name, guildID))
 	wr, err := activityDoc.Create(ctx, &inAct)
@@ -146,32 +166,54 @@ func (act *Activity) RemoveActivity(ctx context.Context, force bool) error {
 }
 
 func (act *Activity) AddNomination(ctx context.Context, userId string) error {
+	if slices.Contains(act.inner.Nominations, userId) {
+		return nil
+	}
 	_, err := act.docRef.Update(ctx,
 		[]firestore.Update{
 			{
 				FieldPath: firestore.FieldPath{"nominations"},
 				Value:     firestore.ArrayUnion(userId),
 			},
+			{
+				FieldPath: firestore.FieldPath{"nominations_count"},
+				Value:     firestore.Increment(1),
+			},
+			{
+				FieldPath: firestore.FieldPath{"random"},
+				Value:     NewRandomHelper(),
+			},
 		},
 	)
-	if !slices.Contains(act.inner.Nominations, userId) {
-		act.inner.Nominations = append(act.inner.Nominations, userId)
-	}
+	act.inner.Nominations = append(act.inner.Nominations, userId)
+	act.inner.NominationsCount += 1
 	return err
 }
 
 func (act *Activity) RemoveNomination(ctx context.Context, userId string) error {
+	if !slices.Contains(act.inner.Nominations, userId) {
+		return nil
+	}
 	_, err := act.docRef.Update(ctx,
 		[]firestore.Update{
 			{
 				FieldPath: firestore.FieldPath{"nominations"},
 				Value:     firestore.ArrayRemove(userId),
 			},
+			{
+				FieldPath: firestore.FieldPath{"nominations_count"},
+				Value:     firestore.Increment(-1),
+			},
+			{
+				FieldPath: firestore.FieldPath{"random"},
+				Value:     NewRandomHelper(),
+			},
 		},
 	)
 	act.inner.Nominations = slices.DeleteFunc(act.inner.Nominations, func(cmp string) bool {
 		return cmp == userId
 	})
+	act.inner.NominationsCount -= 1
 	return err
 }
 
@@ -208,12 +250,8 @@ func GetActivitiesPage(ctx context.Context, guildID string, pageNum int, opts *A
 	if err != nil {
 		return nil, false, fmt.Errorf("getCollection: %v", err)
 	}
-	// This query requires an index which is created in terraform??
-	query := activityCollection.Select("name", "nominations").WhereEntity(firestore.PropertyFilter{
-		Path:     "guild_id",
-		Operator: "==",
-		Value:    guildID,
-	})
+	// This query requires an index which is created in terraform
+	query := activityCollection.Select("name", "nominations")
 	if opts.Type != "" {
 		query = query.WhereEntity(firestore.PropertyFilter{
 			Path:     "type",
@@ -228,7 +266,12 @@ func GetActivitiesPage(ctx context.Context, guildID string, pageNum int, opts *A
 			Value:    opts.UserId,
 		})
 	}
-	iter := query.OrderBy("name", firestore.Asc).Offset(pageNum * PAGE_SIZE).Documents(ctx)
+	query = query.WhereEntity(firestore.PropertyFilter{
+		Path:     "guild_id",
+		Operator: "==",
+		Value:    guildID,
+	})
+	iter := query.OrderBy("search_name", firestore.Asc).Offset(pageNum * PAGE_SIZE).Documents(ctx)
 	defer iter.Stop()
 
 	results := make([]utils.GameEntry, 0, PAGE_SIZE)
@@ -259,4 +302,179 @@ func GetActivitiesPage(ctx context.Context, guildID string, pageNum int, opts *A
 	}
 	return results, lastItem, nil
 
+}
+
+func AutocompleteActivities(ctx context.Context, guildID, text string, cl *clients.Clients) ([]*discordgo.ApplicationCommandOptionChoice, error) {
+	activityCollection, err := getCollection(cl)
+	if err != nil {
+		return []*discordgo.ApplicationCommandOptionChoice{}, fmt.Errorf("getCollection: %v", err)
+	}
+	text = strings.ToLower(text)
+	// This query requires an index which is created in terraform
+	query := activityCollection.Select("name").WhereEntity(firestore.PropertyFilter{
+		Path:     "search_name",
+		Operator: ">=",
+		Value:    text,
+	}).WhereEntity(firestore.PropertyFilter{
+		Path:     "search_name",
+		Operator: "<=",
+		Value:    text + "\uf8ff",
+	}).WhereEntity(firestore.PropertyFilter{
+		Path:     "guild_id",
+		Operator: "==",
+		Value:    guildID,
+	}).OrderBy("search_name", firestore.Asc)
+	iter := query.Documents(ctx)
+	defer iter.Stop()
+
+	results := make([]*discordgo.ApplicationCommandOptionChoice, 0, MAX_AUTOCOMPLETE_ENTRIES)
+	for i := 0; i < MAX_AUTOCOMPLETE_ENTRIES; i++ {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return []*discordgo.ApplicationCommandOptionChoice{}, fmt.Errorf("iter.Next: %v", err)
+		}
+		var inAct innerActivity
+		err = doc.DataTo(&inAct)
+		if err != nil {
+			return []*discordgo.ApplicationCommandOptionChoice{}, fmt.Errorf("doc.DataTo: %v", err)
+		}
+		results = append(results, &discordgo.ApplicationCommandOptionChoice{
+			Name:  inAct.Name,
+			Value: inAct.Name,
+		})
+	}
+	return results, nil
+}
+
+func GetTopNominations(ctx context.Context, guildID string, n int, cl *clients.Clients) ([]string, error) {
+	activityCollection, err := getCollection(cl)
+	if err != nil {
+		return nil, fmt.Errorf("getCollection: %v", err)
+	}
+	// This query requires an index which is created in terraform
+	query := activityCollection.Select("name").WhereEntity(&firestore.PropertyFilter{
+		Path:     "nominations_count",
+		Operator: ">",
+		Value:    0,
+	}).WhereEntity(&firestore.PropertyFilter{
+		Path:     "guild_id",
+		Operator: "==",
+		Value:    guildID,
+	}).OrderBy("nominations_count", firestore.Desc).Limit(n)
+	iter := query.Documents(ctx)
+	defer iter.Stop()
+
+	results := make([]string, 0, n)
+	for i := 0; i < n; i++ {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("iter.Next: %v", err)
+		}
+		var inAct innerActivity
+		err = doc.DataTo(&inAct)
+		if err != nil {
+			return nil, fmt.Errorf("doc.DataTo: %v", err)
+		}
+		results = append(results, inAct.Name)
+	}
+	return results, nil
+}
+
+func GetRandomActivities(ctx context.Context, guildID string, n int, cl *clients.Clients) ([]string, error) {
+	activityCollection, err := getCollection(cl)
+	if err != nil {
+		return nil, fmt.Errorf("getCollection: %v", err)
+	}
+	randomNumber := rand.Uint32()
+	randomSelector := (rand.Int() % 2) + 1
+	randomPath := fmt.Sprintf("random.num_%v", randomSelector)
+	// This query requires an index which is created in terraform
+	query := activityCollection.Select("name").WhereEntity(&firestore.PropertyFilter{
+		Path:     randomPath,
+		Operator: ">=",
+		Value:    randomNumber,
+	}).WhereEntity(&firestore.PropertyFilter{
+		Path:     "guild_id",
+		Operator: "==",
+		Value:    guildID,
+	}).OrderBy(randomPath, firestore.Asc).Limit(n)
+	iter := query.Documents(ctx)
+	defer iter.Stop()
+
+	results := make([]string, 0, n)
+	for i := 0; i < n; i++ {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("iter.Next: %v", err)
+		}
+		var inAct innerActivity
+		err = doc.DataTo(&inAct)
+		if err != nil {
+			return nil, fmt.Errorf("doc.DataTo: %v", err)
+		}
+		results = append(results, inAct.Name)
+	}
+	return results, nil
+}
+
+func ClearNominations(ctx context.Context, guildID string, cl *clients.Clients) error {
+	firestoreClient, err := cl.Firestore()
+	if err != nil {
+		return fmt.Errorf("Firestore: %v", err)
+	}
+	activityCollection, err := getCollection(cl)
+	if err != nil {
+		return fmt.Errorf("getCollection: %v", err)
+	}
+	// This query requires an index which is created in terraform
+	// Sorted in descending to use the same index as top nominations
+	query := activityCollection.Select().WhereEntity(&firestore.PropertyFilter{
+		Path:     "nominations_count",
+		Operator: ">",
+		Value:    0,
+	}).WhereEntity(&firestore.PropertyFilter{
+		Path:     "guild_id",
+		Operator: "==",
+		Value:    guildID,
+	}).OrderBy("nominations_count", firestore.Desc)
+	iter := query.Documents(ctx)
+	bulkWriter := firestoreClient.BulkWriter(ctx)
+	defer bulkWriter.End()
+
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("iter.Next: %v", err)
+		}
+		_, err = bulkWriter.Update(doc.Ref, []firestore.Update{
+			{
+				Path:  "nominations",
+				Value: []string{},
+			},
+			{
+				Path:  "nominations_count",
+				Value: 0,
+			},
+			{
+				FieldPath: firestore.FieldPath{"random"},
+				Value:     NewRandomHelper(),
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("Update: %v", err)
+		}
+	}
+	return nil
 }

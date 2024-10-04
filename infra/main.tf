@@ -58,7 +58,7 @@ resource "google_firestore_index" "pool-search-index" {
   }
 
   fields {
-    field_path = "name"
+    field_path = "search_name"
     order      = "ASCENDING"
   }
 }
@@ -74,7 +74,28 @@ resource "google_firestore_index" "pool-type-search-index" {
   }
 
   fields {
+    field_path = "search_name"
+    order      = "ASCENDING"
+  }
+}
+
+resource "google_firestore_index" "pool-autocomplete-index" {
+  project    = var.project
+  database   = "(default)"
+  collection = "flavor-of-the-week"
+
+  fields {
+    field_path = "guild_id"
+    order      = "ASCENDING"
+  }
+
+  fields {
     field_path = "name"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "search_name"
     order      = "ASCENDING"
   }
 }
@@ -95,7 +116,55 @@ resource "google_firestore_index" "nominations-search-index" {
   }
 
   fields {
-    field_path = "name"
+    field_path = "search_name"
+    order      = "ASCENDING"
+  }
+}
+
+resource "google_firestore_index" "nominations-index" {
+  project    = var.project
+  database   = "(default)"
+  collection = "flavor-of-the-week"
+
+  fields {
+    field_path = "guild_id"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "nominations_count"
+    order      = "DESCENDING"
+  }
+}
+
+resource "google_firestore_index" "random-1-index" {
+  project    = var.project
+  database   = "(default)"
+  collection = "flavor-of-the-week"
+
+  fields {
+    field_path = "guild_id"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "random.num_1"
+    order      = "ASCENDING"
+  }
+}
+
+resource "google_firestore_index" "random-2-index" {
+  project    = var.project
+  database   = "(default)"
+  collection = "flavor-of-the-week"
+
+  fields {
+    field_path = "guild_id"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "random.num_2"
     order      = "ASCENDING"
   }
 }

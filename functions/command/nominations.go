@@ -95,5 +95,22 @@ func (c *NominationListCommand) Execute(ctx context.Context, cl *clients.Clients
 	if err != nil {
 		return nil, fmt.Errorf("GetActivitesPage: %v", err)
 	}
-	return utils.BuildDiscordPage(entries, "nominations", c.Page, lastPage), nil
+	customID := utils.NewCustomID("nominations", utils.Filter{
+		Name: c.Name,
+	}, c.Page)
+	edit := utils.BuildDiscordPage(entries, customID, lastPage)
+	if edit.Embeds != nil && len(*edit.Embeds) == 0 {
+		return &discordgo.WebhookEdit{
+			Embeds: &[]*discordgo.MessageEmbed{
+				{
+					Type:        discordgo.EmbedTypeImage,
+					Description: "You got no nominations",
+					Image: &discordgo.MessageEmbedImage{
+						URL: "https://i.imgflip.com/95guyj.jpg",
+					},
+				},
+			},
+		}, nil
+	}
+	return edit, nil
 }

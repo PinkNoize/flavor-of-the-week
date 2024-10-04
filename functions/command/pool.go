@@ -42,5 +42,9 @@ func (c *PoolListCommand) Execute(ctx context.Context, cl *clients.Clients) (*di
 	if err != nil {
 		return nil, fmt.Errorf("GetActivitesPage: %v", err)
 	}
-	return utils.BuildDiscordPage(entries, "pool", c.Page, lastPage), nil
+	customID := utils.NewCustomID("pool", utils.Filter{
+		Name: c.Name,
+		Type: actType,
+	}, c.Page)
+	return utils.BuildDiscordPage(entries, customID, lastPage), nil
 }

@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
+	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
 	"github.com/bwmarrin/discordgo"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"go.uber.org/zap"
@@ -45,28 +46,34 @@ func (c *DiscordCommand) ToContext(ctx context.Context) context.Context {
 }
 
 func (c *DiscordCommand) LogCommand(ctx context.Context) {
-	command := c.interaction.ApplicationCommandData()
+	switch c.Type() {
+	case discordgo.InteractionApplicationCommand, discordgo.InteractionApplicationCommandAutocomplete:
+		command := c.interaction.ApplicationCommandData()
 
-	ctxzap.Info(ctx, fmt.Sprintf("User %v (%v) ran %v", c.UserNick(), c.UserID(), command.Name),
-		zap.String("type", "audit"),
-		zap.String("nick", c.UserNick()),
-		zap.String("userid", c.UserID()),
-		zap.String("command", command.Name),
-		zap.String("guildID", c.interaction.GuildID),
-		zap.Any("options", command.Options),
-	)
-}
+		verb := "ran"
+		if c.Type() == discordgo.InteractionApplicationCommandAutocomplete {
+			verb = "autocompleted"
+		}
 
-func (c *DiscordCommand) LogMessageComponent(ctx context.Context) {
-	data := c.interaction.MessageComponentData()
+		ctxzap.Info(ctx, fmt.Sprintf("User %v (%v) %v %v", c.UserNick(), c.UserID(), verb, command.Name),
+			zap.String("type", "audit"),
+			zap.String("nick", c.UserNick()),
+			zap.String("userid", c.UserID()),
+			zap.String("command", command.Name),
+			zap.String("guildID", c.interaction.GuildID),
+			zap.Any("options", command.Options),
+		)
+	case discordgo.InteractionMessageComponent:
+		data := c.interaction.MessageComponentData()
 
-	ctxzap.Info(ctx, fmt.Sprintf("User %v (%v) interacted with a message", c.UserNick(), c.UserID()),
-		zap.String("type", "audit"),
-		zap.String("nick", c.UserNick()),
-		zap.String("userid", c.UserID()),
-		zap.String("custom_id", data.CustomID),
-		zap.String("guildID", c.interaction.GuildID),
-	)
+		ctxzap.Info(ctx, fmt.Sprintf("User %v (%v) interacted with a message", c.UserNick(), c.UserID()),
+			zap.String("type", "audit"),
+			zap.String("nick", c.UserNick()),
+			zap.String("userid", c.UserID()),
+			zap.String("custom_id", data.CustomID),
+			zap.String("guildID", c.interaction.GuildID),
+		)
+	}
 }
 
 func (c *DiscordCommand) Type() discordgo.InteractionType {
@@ -110,33 +117,43 @@ func (c *DiscordCommand) CommandName() string {
 }
 
 func (c *DiscordCommand) ToCommand() (Command, error) {
+	switch c.Type() {
+	case discordgo.InteractionApplicationCommand:
+		return c.fromApplicationCommand()
+	case discordgo.InteractionMessageComponent:
+		return c.fromMessageComponent()
+	}
+	return nil, fmt.Errorf("Unexpected interaction type: %v", c.Type())
+}
+
+func (c *DiscordCommand) fromApplicationCommand() (Command, error) {
 	if c.Type() != discordgo.InteractionApplicationCommand {
 		return nil, fmt.Errorf("not a valid command")
 	}
 	commandData := c.interaction.ApplicationCommandData()
-	args := optionsToMap(commandData.Options)
+	args := utils.OptionsToMap(commandData.Options)
 	switch commandData.Name {
 	case "add":
-		if pass, missing := verifyOpts(args, []string{"type", "name"}); !pass {
+		if pass, missing := utils.VerifyOpts(args, []string{"type", "name"}); !pass {
 			return nil, fmt.Errorf("missing options: %v", missing)
 		}
 		return NewAddCommand(c.interaction.GuildID, args["type"].StringValue(), args["name"].StringValue()), nil
 	case "remove":
-		if pass, missing := verifyOpts(args, []string{"name"}); !pass {
+		if pass, missing := utils.VerifyOpts(args, []string{"name"}); !pass {
 			return nil, fmt.Errorf("missing options: %v", missing)
 		}
 		return NewRemoveCommand(c.interaction.GuildID, args["name"].StringValue(), false), nil
 	case "nominations":
 		subcmd := commandData.Options[0]
-		subcmd_args := optionsToMap(subcmd.Options)
+		subcmd_args := utils.OptionsToMap(subcmd.Options)
 		switch subcmd.Name {
 		case "add":
-			if pass, missing := verifyOpts(subcmd_args, []string{"name"}); !pass {
+			if pass, missing := utils.VerifyOpts(subcmd_args, []string{"name"}); !pass {
 				return nil, fmt.Errorf("missing options: %v", missing)
 			}
 			return NewNominationAddCommand(c.interaction.GuildID, c.UserID(), subcmd_args["name"].StringValue()), nil
 		case "remove":
-			if pass, missing := verifyOpts(subcmd_args, []string{"name"}); !pass {
+			if pass, missing := utils.VerifyOpts(subcmd_args, []string{"name"}); !pass {
 				return nil, fmt.Errorf("missing options: %v", missing)
 			}
 			return NewNominationRemoveCommand(c.interaction.GuildID, c.UserID(), subcmd_args["name"].StringValue()), nil
@@ -167,44 +184,49 @@ func (c *DiscordCommand) ToCommand() (Command, error) {
 		return NewPoolListCommand(c.interaction.GuildID, name, actType, 0), nil
 	case "start-poll":
 		return NewStartPollCommand(c.interaction.GuildID), nil
+	case "end-poll":
+		return NewEndPollCommand(c.interaction.GuildID), nil
 	case "poll-channel":
-		if pass, missing := verifyOpts(args, []string{"channel"}); !pass {
+		if pass, missing := utils.VerifyOpts(args, []string{"channel"}); !pass {
 			return nil, fmt.Errorf("missing options: %v", missing)
 		}
 		return NewSetPollChannelCommand(c.interaction.GuildID, args["channel"].ChannelValue(nil)), nil
 	case "override-fow":
-		if pass, missing := verifyOpts(args, []string{"name"}); !pass {
+		if pass, missing := utils.VerifyOpts(args, []string{"name"}); !pass {
 			return nil, fmt.Errorf("missing options: %v", missing)
 		}
 		return NewSetFowCommand(c.interaction.GuildID, args["name"].StringValue()), nil
 	case "force-remove":
-		if pass, missing := verifyOpts(args, []string{"name"}); !pass {
+		if pass, missing := utils.VerifyOpts(args, []string{"name"}); !pass {
 			return nil, fmt.Errorf("missing options: %v", missing)
 		}
 		return NewRemoveCommand(c.interaction.GuildID, args["name"].StringValue(), true), nil
+	case "stats":
+		return NewStatsCommand(c.interaction.GuildID), nil
 	default:
 		return nil, fmt.Errorf("not a valid command: %v", commandData.Name)
 	}
 }
 
-func optionsToMap(opts []*discordgo.ApplicationCommandInteractionDataOption) map[string]*discordgo.ApplicationCommandInteractionDataOption {
-	mappedOpts := make(map[string]*discordgo.ApplicationCommandInteractionDataOption)
-
-	for i := range opts {
-		if opts[i] != nil {
-			mappedOpts[opts[i].Name] = opts[i]
+func (c *DiscordCommand) fromMessageComponent() (Command, error) {
+	if c.Type() != discordgo.InteractionMessageComponent {
+		return nil, fmt.Errorf("not a valid message")
+	}
+	msgData := c.interaction.MessageComponentData()
+	customID, err := utils.ParseCustomID(msgData.CustomID)
+	if err != nil {
+		return nil, err
+	}
+	switch msgData.ComponentType {
+	case discordgo.ButtonComponent:
+		switch customID.Type {
+		case "pool":
+			return NewPoolListCommand(c.interaction.GuildID, customID.Filter.Name, customID.Filter.Type, customID.Page), nil
+		case "nominations":
+			return NewNominationListCommand(c.interaction.GuildID, c.interaction.Member.User.ID, customID.Filter.Name, customID.Page), nil
 		}
 	}
-	return mappedOpts
-}
-
-func verifyOpts(opts map[string]*discordgo.ApplicationCommandInteractionDataOption, expected []string) (bool, string) {
-	for _, v := range expected {
-		if _, ok := opts[v]; !ok {
-			return false, v
-		}
-	}
-	return true, ""
+	return nil, fmt.Errorf("Unexpected message component: %v", msgData)
 }
 
 type Command interface {

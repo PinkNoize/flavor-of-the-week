@@ -1,5 +1,9 @@
 # Command Function
 
+locals {
+  secret_id_split = split("/", var.discord_secret_id)
+}
+
 resource "google_cloudfunctions2_function" "command" {
   name        = "command-${random_id.id.hex}"
   location    = var.region
@@ -25,6 +29,12 @@ resource "google_cloudfunctions2_function" "command" {
       PROJECT_ID     = var.project,
       COMMAND_TOPIC  = google_pubsub_topic.command_topic.id,
       DISCORD_PUBKEY = var.discord_public_key,
+    }
+    secret_environment_variables {
+      key        = "DISCORD_TOKEN"
+      project_id = var.project
+      secret     = element(local.secret_id_split, length(local.secret_id_split) - 1)
+      version    = "latest"
     }
     service_account_email = google_service_account.cloud_func_service_account.email
   }

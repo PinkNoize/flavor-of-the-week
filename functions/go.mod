@@ -2,7 +2,10 @@ module github.com/PinkNoize/flavor-of-the-week/functions
 
 go 1.22.7
 
-require github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
+require (
+	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
+	google.golang.org/api v0.196.0
+)
 
 require (
 	cloud.google.com/go v0.115.1 // indirect
@@ -11,6 +14,7 @@ require (
 	cloud.google.com/go/compute/metadata v0.5.0 // indirect
 	cloud.google.com/go/iam v1.2.0 // indirect
 	cloud.google.com/go/longrunning v0.6.0 // indirect
+	github.com/dimuska139/rawg-sdk-go v1.0.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -28,7 +32,6 @@ require (
 	golang.org/x/oauth2 v0.23.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/time v0.6.0 // indirect
-	google.golang.org/api v0.196.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240903143218-8af14fe29dc1 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
@@ -37,7 +40,9 @@ require (
 require (
 	cloud.google.com/go/firestore v1.17.0
 	cloud.google.com/go/pubsub v1.43.0
-	github.com/bwmarrin/discordgo v0.28.1
+	github.com/bwmarrin/discordgo v0.28.2-0.20240729124523-41a66e5f151f
+	github.com/cenkalti/backoff/v4 v4.3.0
+	github.com/elliotchance/orderedmap/v2 v2.4.0
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/josestg/lazy v0.0.0-20230114190824-2bace4761b02
 	go.uber.org/multierr v1.10.0 // indirect
@@ -49,3 +54,5 @@ require (
 	google.golang.org/genproto v0.0.0-20240903143218-8af14fe29dc1 // indirect
 	google.golang.org/grpc v1.66.0
 )
+
+replace github.com/bwmarrin/discordgo => github.com/PinkNoize/discordgo v0.0.0-20241002030129-edfeb5a0adc2
