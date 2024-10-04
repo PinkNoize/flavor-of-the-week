@@ -9,7 +9,7 @@ import (
 
 func TestLazyLoad(t *testing.T) {
 	ctx := context.Background()
-	c := clients.New(ctx, "", "")
+	c := clients.New(ctx, "", "", "")
 	_, err := c.Discord()
 	if err != nil {
 		t.Fatalf(`c.Discord err != nil, %v, want nil, error`, err)
