@@ -34,7 +34,7 @@ func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discord
 	default:
 		return nil, fmt.Errorf("Activity type not supported: %v", c.ActivityType)
 	}
-	_, err := activity.Create(ctx, typ, c.Name, c.GuildID, cl)
+	_, err := activity.Create(ctx, typ, c.Name, c.GuildID, nil, cl)
 	if err != nil {
 		ae, ok := err.(*activity.ActivityError)
 		if ok {

@@ -61,6 +61,12 @@ func NewRandomHelper() randomHelper {
 	}
 }
 
+type GameInfo struct {
+	Id              string `firestore:"id"`
+	Slug            string `firestore:"slug"`
+	BackgroundImage string `firestore:"bg_image"`
+}
+
 type innerActivity struct {
 	Typ              ActivityType `firestore:"type"`
 	Name             string       `firestore:"name"`
@@ -69,6 +75,7 @@ type innerActivity struct {
 	Nominations      []string     `firestore:"nominations"`
 	NominationsCount int          `firestore:"nominations_count"`
 	Random           randomHelper `firestore:"random"`
+	GameInfo         *GameInfo    `firestore:"game_info"`
 }
 
 type Activity struct {
@@ -116,7 +123,7 @@ func generateName(guildId, name string) string {
 	return fmt.Sprintf("%v:%x", guildId, sha256.Sum256([]byte(name)))
 }
 
-func Create(ctx context.Context, typ ActivityType, name, guildID string, cl *clients.Clients) (*Activity, error) {
+func Create(ctx context.Context, typ ActivityType, name, guildID string, gameInfo *GameInfo, cl *clients.Clients) (*Activity, error) {
 	activityCollection, err := getCollection(cl)
 	if err != nil {
 		return nil, fmt.Errorf("getCollection: %v", err)
@@ -130,6 +137,7 @@ func Create(ctx context.Context, typ ActivityType, name, guildID string, cl *cli
 		SearchName: strings.ToLower(name),
 		GuildID:    guildID,
 		Random:     NewRandomHelper(),
+		GameInfo:   gameInfo,
 	}
 	ctxzap.Info(ctx, fmt.Sprintf("Creating %v in %v", name, guildID))
 	wr, err := activityDoc.Create(ctx, &inAct)
@@ -235,11 +243,16 @@ func GetActivitiesPage(ctx context.Context, guildID string, pageNum int, opts *A
 			}
 			return nil, false, fmt.Errorf("GetActivity: %v", err)
 		}
+		imageUrl := ""
+		if act.inner.GameInfo != nil {
+			imageUrl = act.inner.GameInfo.BackgroundImage
+		}
 		if !opts.NominationsOnly || slices.Contains(act.inner.Nominations, opts.UserId) {
 			return []utils.GameEntry{
 				{
 					Name:        opts.Name,
 					Nominations: len(act.inner.Nominations),
+					ImageURL:    imageUrl,
 				},
 			}, true, nil
 		}
@@ -291,6 +304,7 @@ func GetActivitiesPage(ctx context.Context, guildID string, pageNum int, opts *A
 		results = append(results, utils.GameEntry{
 			Name:        inAct.Name,
 			Nominations: len(inAct.Nominations),
+			ImageURL:    inAct.GameInfo.BackgroundImage,
 		})
 	}
 	lastItem := false

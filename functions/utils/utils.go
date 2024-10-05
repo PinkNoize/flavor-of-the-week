@@ -47,15 +47,23 @@ func (c *CustomID) ToJson() (string, error) {
 type GameEntry struct {
 	Name        string
 	Nominations int
+	ImageURL    string
 }
 
 func BuildDiscordPage(gameEntries []GameEntry, customID *CustomID, isLastPage bool) *discordgo.WebhookEdit {
 	embeds := make([]*discordgo.MessageEmbed, 0, len(gameEntries))
 	for _, ent := range gameEntries {
+		var thumbnail *discordgo.MessageEmbedThumbnail
+		if ent.ImageURL != "" {
+			thumbnail = &discordgo.MessageEmbedThumbnail{
+				URL: ent.ImageURL,
+			}
+		}
 		embeds = append(embeds, &discordgo.MessageEmbed{
 			Type:        discordgo.EmbedTypeRich,
 			Title:       ent.Name,
 			Description: fmt.Sprintf("Nominations: %v", ent.Nominations),
+			Thumbnail:   thumbnail,
 		})
 	}
 
