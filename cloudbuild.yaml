@@ -11,7 +11,6 @@ steps:
       discord_app_id = "$_DISCORD_APP_ID"
       discord_public_key = "$_DISCORD_PUBLIC_KEY"
       discord_secret_id = "$_DISCORD_SECRET_ID"
-      rawg_secret_id = "$_RAWG_SECRET_ID"
       EOT_BOOT
   - id: 'terraform init'
     dir: infra
@@ -39,21 +38,10 @@ steps:
     secretEnv: [
       'DISCORD_SECRET_TOKEN'
     ]
-  - id: 'Deploy RAWG config'
-    dir: deploy-commands-function
-    name: golang:1.22
-    script: go run .
-    env:
-      - 'RAWG_SECRET_ID=$_RAWG_SECRET_ID'
-    secretEnv: [
-      'RAWG_SECRET_TOKEN'
-    ]
 availableSecrets:
   secretManager:
   - versionName: ${_DISCORD_SECRET_ID}/versions/latest
     env: 'DISCORD_SECRET_TOKEN'
-  - versionName: ${_RAWG_SECRET_ID}/versions/latest
-    env: 'RAWG_SECRET_TOKEN'
 options:
   logging: CLOUD_LOGGING_ONLY
   automapSubstitutions: true
