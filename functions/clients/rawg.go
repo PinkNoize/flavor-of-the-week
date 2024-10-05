@@ -22,5 +22,5 @@ func NewRawg(rawgToken string) *Rawg {
 }
 
 func (r *Rawg) GetGame(ctx context.Context, game string) (*rawg.GameDetailed, error) {
-	return detail, err
+	return r.client.GetGame(ctx, game)
 }
