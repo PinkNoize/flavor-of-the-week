@@ -62,7 +62,7 @@ func NewRandomHelper() randomHelper {
 }
 
 type GameInfo struct {
-	Id              string `firestore:"id"`
+	Id              int    `firestore:"id"`
 	Slug            string `firestore:"slug"`
 	BackgroundImage string `firestore:"bg_image"`
 }
