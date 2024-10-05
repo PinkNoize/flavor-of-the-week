@@ -27,7 +27,7 @@ steps:
   - id: 'terraform apply'
     dir: infra
     name: 'hashicorp/terraform:latest'
-    script: terraform apply -no-color --auto-approve -var-file=/workspace/terraform.tfvars /workspace/plan
+    script: terraform apply -no-color --auto-approve /workspace/plan
   - id: 'Deploy Discord config'
     dir: deploy-commands-function
     name: golang:1.22
