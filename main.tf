@@ -150,13 +150,6 @@ resource "google_secret_manager_secret_iam_member" "build_member" {
   member    = "serviceAccount:${google_service_account.cloudbuild_service_account.email}"
 }
 
-resource "google_secret_manager_secret_iam_member" "build_member" {
-  project   = var.project
-  secret_id = google_secret_manager_secret.rawg_api.id
-  role      = "roles/secretmanager.admin"
-  member    = "serviceAccount:${google_service_account.cloudbuild_service_account.email}"
-}
-
 resource "google_project_iam_member" "eventarc_admin" {
   project = var.project
   role    = "roles/eventarc.admin"
@@ -166,18 +159,6 @@ resource "google_project_iam_member" "eventarc_admin" {
 # Discord API secret
 
 resource "google_secret_manager_secret" "discord_api" {
-  secret_id = "discord-api-${random_id.id.hex}"
-
-  replication {
-    user_managed {
-      replicas {
-        location = var.region
-      }
-    }
-  }
-}
-
-resource "google_secret_manager_secret" "rawg_api" {
   secret_id = "discord-api-${random_id.id.hex}"
 
   replication {
@@ -213,7 +194,6 @@ resource "google_cloudbuild_trigger" "prod_trigger" {
     _DISCORD_APP_ID     = var.discord_app_id,
     _DISCORD_PUBLIC_KEY = var.discord_public_key,
     _DISCORD_SECRET_ID  = google_secret_manager_secret.discord_api.id,
-    _RAWG_SECRET_ID  = google_secret_manager_secret.rawg_api.id,
   }
 
   service_account = google_service_account.cloudbuild_service_account.id
@@ -295,7 +275,6 @@ resource "google_cloudbuild_trigger" "pr_trigger" {
     _DISCORD_APP_ID     = var.discord_app_id,
     _DISCORD_PUBLIC_KEY = var.discord_public_key,
     _DISCORD_SECRET_ID  = google_secret_manager_secret.discord_api.id,
-    _RAWG_SECRET_ID  = google_secret_manager_secret.rawg_api.id,
   }
 
   service_account = google_service_account.cloudbuild_service_account.id
