@@ -197,6 +197,13 @@ resource "google_secret_manager_secret_iam_member" "cloud_func_member" {
   member    = "serviceAccount:${google_service_account.cloud_func_service_account.email}"
 }
 
+
+resource "google_secret_manager_secret_iam_member" "cloud_func_member_rawg" {
+  secret_id = google_secret_manager_secret.rawg_api.id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.cloud_func_service_account.email}"
+}
+
 resource "google_secret_manager_secret" "rawg_api" {
   secret_id = "discord-api-${random_id.id.hex}"
 
