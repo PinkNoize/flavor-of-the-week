@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/PinkNoize/flavor-of-the-week/functions/activity"
@@ -31,16 +32,37 @@ func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discord
 	case "activity":
 		typ = activity.ACTIVITY
 	case "game":
+		typ = activity.GAME
+
 		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*500))
 		defer cancel()
 
 		detail, err := cl.Rawg().GetGame(ctx, c.Name)
 
 		if err != nil {
+			msg := clients.RawgErrorMsg(err)
+			return utils.NewWebhookEdit(msg), err
+		}
+		if detail == nil {
 			return utils.NewWebhookEdit("🚧 Game not found 🚧"), err
 		}
 
-		return utils.NewWebhookEdit(fmt.Sprintf("%s added to nominations", detail.Name)), nil
+		info := &activity.GameInfo{
+			Id:              strconv.Itoa(detail.ID),
+			Slug:            detail.Slug,
+			BackgroundImage: detail.ImageBackground,
+		}
+		_, err = activity.Create(ctx, typ, c.Name, c.GuildID, info, cl)
+		if err != nil {
+			ae, ok := err.(*activity.ActivityError)
+			if ok {
+				if ae.Reason == activity.ALREADY_EXISTS {
+					return utils.NewWebhookEdit(fmt.Sprintf("%v already exists in the pool", c.Name)), nil
+				}
+			}
+			return nil, fmt.Errorf("act.Create: %v", err)
+		}
+		return utils.NewWebhookEdit(fmt.Sprintf("%v added to the pool", c.Name)), nil
 	default:
 		return nil, fmt.Errorf("Activity type not supported: %v", c.ActivityType)
 	}
