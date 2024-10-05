@@ -34,9 +34,13 @@ func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discord
 		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*500))
 		defer cancel()
 
-		cl.Rawg().GetGame(ctx, c.Name)
+		detail, err := cl.Rawg().GetGame(ctx, c.Name)
 
-		return utils.NewWebhookEdit("🚧 Games not implemented yet"), nil
+		if err != nil {
+			return utils.NewWebhookEdit("🚧 Game not found 🚧"), err
+		}
+
+		return utils.NewWebhookEdit(fmt.Sprintf("%s added to nominations", detail.Name)), nil
 	default:
 		return nil, fmt.Errorf("Activity type not supported: %v", c.ActivityType)
 	}
