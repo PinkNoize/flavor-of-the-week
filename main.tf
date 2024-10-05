@@ -211,7 +211,7 @@ resource "google_cloudbuild_trigger" "prod_trigger" {
     google_project_iam_member.cloudscheduler_admin,
     google_project_iam_member.service_usage_admin,
     google_project_iam_member.logs_writer,
-    google_secret_manager_secret_iam_member.build_member,
+    google_project_iam_member.secret_admin,
     google_project_iam_member.eventarc_admin,
     google_project_iam_member.cloud_build_custom_role,
     google_project_iam_member.datastore_owner,
