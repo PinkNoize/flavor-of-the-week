@@ -226,7 +226,7 @@ resource "google_pubsub_topic" "command_topic" {
 
 data "archive_file" "default" {
   type        = "zip"
-  output_path = "/tmp/functions-source.zip"
+  output_path = "/workspace/tmp/functions-source.zip"
   source_dir  = "../functions/"
 }
 resource "google_storage_bucket_object" "function-source" {
