@@ -197,11 +197,16 @@ resource "google_secret_manager_secret_iam_member" "cloud_func_member" {
   member    = "serviceAccount:${google_service_account.cloud_func_service_account.email}"
 }
 
-resource "google_secret_manager_secret_iam_member" "cloud_func_member" {
-  project   = var.project
-  secret_id = var.rawg_secret_id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.cloud_func_service_account.email}"
+resource "google_secret_manager_secret" "rawg_api" {
+  secret_id = "discord-api-${random_id.id.hex}"
+
+  replication {
+    user_managed {
+      replicas {
+        location = var.region
+      }
+    }
+  }
 }
 
 # Command Pub/Sub
