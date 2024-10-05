@@ -15,15 +15,15 @@ steps:
   - id: 'terraform init'
     dir: infra
     name: 'hashicorp/terraform:latest'
-    script: terraform init -backend-config="bucket=${_TFSTATE_BUCKET}" -var-file=/workspace/terraform.tfvars
+    script: terraform init -no-color -backend-config="bucket=${_TFSTATE_BUCKET}" -var-file=/workspace/terraform.tfvars
   - id: 'terraform fmt'
     dir: infra
     name: 'hashicorp/terraform:latest'
-    script: terraform fmt -check
+    script: terraform fmt -no-color -check
   - id: 'terraform plan'
     dir: infra
     name: 'hashicorp/terraform:latest'
-    script: terraform plan -var-file=/workspace/terraform.tfvars -lock=false
+    script: terraform plan -no-color -var-file=/workspace/terraform.tfvars -lock=false
 options:
   logging: CLOUD_LOGGING_ONLY
   automapSubstitutions: true
