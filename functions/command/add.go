@@ -29,6 +29,7 @@ func NewAddCommand(guildID, activityType, name string) *AddCommand {
 func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookEdit, error) {
 	var typ activity.ActivityType
 	var info *activity.GameInfo
+	name := c.Name
 	switch c.ActivityType {
 	case "activity":
 		typ = activity.ACTIVITY
@@ -47,7 +48,7 @@ func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discord
 		if detail == nil {
 			return utils.NewWebhookEdit("🚧 Game not found 🚧"), err
 		}
-
+		name = detail.Name
 		info = &activity.GameInfo{
 			Id:              detail.ID,
 			Slug:            detail.Slug,
@@ -56,7 +57,7 @@ func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discord
 	default:
 		return nil, fmt.Errorf("Activity type not supported: %v", c.ActivityType)
 	}
-	_, err := activity.Create(ctx, typ, c.Name, c.GuildID, info, cl)
+	_, err := activity.Create(ctx, typ, name, c.GuildID, info, cl)
 	if err != nil {
 		ae, ok := err.(*activity.ActivityError)
 		if ok {
