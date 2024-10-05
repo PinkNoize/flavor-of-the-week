@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/PinkNoize/flavor-of-the-week/functions/activity"
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
@@ -37,16 +36,13 @@ func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discord
 	case "game":
 		typ = activity.GAME
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*500))
-		defer cancel()
-
 		detail, err := cl.Rawg().GetGame(ctx, c.Name)
 
 		if err != nil {
 			if rawgError, ok := err.(*rawg.RawgError); ok && rawgError.HttpCode == http.StatusNotFound {
-				return utils.NewWebhookEdit("🚧 Game not found 🚧"), err
+				return utils.NewWebhookEdit("🚧 Game not found 🚧"), fmt.Errorf("rawg.go: %v", err)
 			} else {
-				return utils.NewWebhookEdit("🤖🔥 Bot error 🔥"), err
+				return nil, fmt.Errorf("rawg.go: %v", err)
 			}
 		}
 		if detail == nil {

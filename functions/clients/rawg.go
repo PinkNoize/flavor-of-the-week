@@ -2,7 +2,6 @@ package clients
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/dimuska139/rawg-sdk-go/v3"
@@ -23,6 +22,5 @@ func NewRawg(rawgToken string) *Rawg {
 }
 
 func (r *Rawg) GetGame(ctx context.Context, game string) (*rawg.GameDetailed, error) {
-	detail, err := r.client.GetGame(ctx, game)
-	return detail, fmt.Errorf("rawg.go: %v", err)
+	return detail, err
 }
