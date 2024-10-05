@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/PinkNoize/flavor-of-the-week/functions/activity"
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
@@ -30,6 +31,11 @@ func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discord
 	case "activity":
 		typ = activity.ACTIVITY
 	case "game":
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*500))
+		defer cancel()
+
+		cl.Rawg().GetGame(ctx, c.Name)
+
 		return utils.NewWebhookEdit("🚧 Games not implemented yet"), nil
 	default:
 		return nil, fmt.Errorf("Activity type not supported: %v", c.ActivityType)
