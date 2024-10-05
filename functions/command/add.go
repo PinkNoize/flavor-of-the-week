@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/PinkNoize/flavor-of-the-week/functions/activity"
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
@@ -50,7 +49,7 @@ func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discord
 		}
 
 		info = &activity.GameInfo{
-			Id:              strconv.Itoa(detail.ID),
+			Id:              detail.ID,
 			Slug:            detail.Slug,
 			BackgroundImage: detail.ImageBackground,
 		}
