@@ -21,9 +21,10 @@ resource "google_cloudfunctions2_function" "command" {
   }
 
   service_config {
-    max_instance_count = 5
-    available_memory   = "128Mi"
-    timeout_seconds    = 60
+    max_instance_count               = 5
+    max_instance_request_concurrency = 10
+    available_memory                 = "128Mi"
+    timeout_seconds                  = 60
 
     environment_variables = {
       PROJECT_ID     = var.project,
@@ -34,6 +35,12 @@ resource "google_cloudfunctions2_function" "command" {
       key        = "DISCORD_TOKEN"
       project_id = var.project
       secret     = element(local.secret_id_split, length(local.secret_id_split) - 1)
+      version    = "latest"
+    }
+    secret_environment_variables {
+      key        = "RAWG_TOKEN"
+      project_id = var.project
+      secret     = google_secret_manager_secret.rawg_api.secret_id
       version    = "latest"
     }
     service_account_email = google_service_account.cloud_func_service_account.email
