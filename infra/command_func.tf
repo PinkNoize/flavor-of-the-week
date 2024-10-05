@@ -21,10 +21,9 @@ resource "google_cloudfunctions2_function" "command" {
   }
 
   service_config {
-    max_instance_count               = 5
-    max_instance_request_concurrency = 10
-    available_memory                 = "128Mi"
-    timeout_seconds                  = 60
+    max_instance_count = 5
+    available_memory   = "128Mi"
+    timeout_seconds    = 60
 
     environment_variables = {
       PROJECT_ID     = var.project,

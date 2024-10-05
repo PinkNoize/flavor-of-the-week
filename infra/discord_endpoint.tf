@@ -17,10 +17,9 @@ resource "google_cloudfunctions2_function" "discord_endpoint" {
   }
 
   service_config {
-    max_instance_count               = 5
-    max_instance_request_concurrency = 10
-    available_memory                 = "128Mi"
-    timeout_seconds                  = 10
+    max_instance_count = 5
+    available_memory   = "128Mi"
+    timeout_seconds    = 10
 
     environment_variables = {
       PROJECT_ID     = var.project,
