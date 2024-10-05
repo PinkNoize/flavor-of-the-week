@@ -6,4 +6,3 @@ variable "repo_name" {}
 variable "repo_connection" {}
 variable "discord_app_id" {}
 variable "discord_public_key" {}
-variable "rawg_api_key" {}

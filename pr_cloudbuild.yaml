@@ -11,7 +11,6 @@ steps:
       discord_app_id = "$_DISCORD_APP_ID"
       discord_public_key = "$_DISCORD_PUBLIC_KEY"
       discord_secret_id = "$_DISCORD_SECRET_ID"
-      rawg_api_key = "$_RAWG_API_KEY"
       EOT_BOOT
   - id: 'terraform init'
     dir: infra
