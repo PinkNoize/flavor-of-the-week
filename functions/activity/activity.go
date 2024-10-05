@@ -264,7 +264,7 @@ func GetActivitiesPage(ctx context.Context, guildID string, pageNum int, opts *A
 		return nil, false, fmt.Errorf("getCollection: %v", err)
 	}
 	// This query requires an index which is created in terraform
-	query := activityCollection.Select("name", "nominations")
+	query := activityCollection.Select("name", "nominations", "game_info")
 	if opts.Type != "" {
 		query = query.WhereEntity(firestore.PropertyFilter{
 			Path:     "type",
@@ -301,10 +301,14 @@ func GetActivitiesPage(ctx context.Context, guildID string, pageNum int, opts *A
 		if err != nil {
 			return nil, false, fmt.Errorf("doc.DataTo: %v", err)
 		}
+		imageUrl := ""
+		if inAct.GameInfo != nil {
+			imageUrl = inAct.GameInfo.BackgroundImage
+		}
 		results = append(results, utils.GameEntry{
 			Name:        inAct.Name,
 			Nominations: len(inAct.Nominations),
-			ImageURL:    inAct.GameInfo.BackgroundImage,
+			ImageURL:    imageUrl,
 		})
 	}
 	lastItem := false
