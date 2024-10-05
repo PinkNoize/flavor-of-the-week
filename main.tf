@@ -143,11 +143,10 @@ resource "google_project_iam_member" "logs_writer" {
   member  = "serviceAccount:${google_service_account.cloudbuild_service_account.email}"
 }
 
-resource "google_secret_manager_secret_iam_member" "build_member" {
-  project   = var.project
-  secret_id = google_secret_manager_secret.discord_api.id
-  role      = "roles/secretmanager.admin"
-  member    = "serviceAccount:${google_service_account.cloudbuild_service_account.email}"
+resource "google_project_iam_member" "secret_admin" {
+  project = var.project
+  role    = "roles/secretmanager.admin"
+  member  = "serviceAccount:${google_service_account.cloudbuild_service_account.email}"
 }
 
 resource "google_project_iam_member" "eventarc_admin" {
