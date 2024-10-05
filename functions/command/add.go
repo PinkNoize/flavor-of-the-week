@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
 	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
 	"github.com/bwmarrin/discordgo"
+	"github.com/dimuska139/rawg-sdk-go/v3"
 )
 
 type AddCommand struct {
@@ -28,6 +30,7 @@ func NewAddCommand(guildID, activityType, name string) *AddCommand {
 
 func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookEdit, error) {
 	var typ activity.ActivityType
+	var info *activity.GameInfo
 	switch c.ActivityType {
 	case "activity":
 		typ = activity.ACTIVITY
@@ -40,33 +43,25 @@ func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discord
 		detail, err := cl.Rawg().GetGame(ctx, c.Name)
 
 		if err != nil {
-			msg := clients.RawgErrorMsg(err)
-			return utils.NewWebhookEdit(msg), err
+			if rawgError, ok := err.(*rawg.RawgError); ok && rawgError.HttpCode == http.StatusNotFound {
+				return utils.NewWebhookEdit("🚧 Game not found 🚧"), err
+			} else {
+				return utils.NewWebhookEdit("🤖🔥 Bot error 🔥"), err
+			}
 		}
 		if detail == nil {
 			return utils.NewWebhookEdit("🚧 Game not found 🚧"), err
 		}
 
-		info := &activity.GameInfo{
+		info = &activity.GameInfo{
 			Id:              strconv.Itoa(detail.ID),
 			Slug:            detail.Slug,
 			BackgroundImage: detail.ImageBackground,
 		}
-		_, err = activity.Create(ctx, typ, c.Name, c.GuildID, info, cl)
-		if err != nil {
-			ae, ok := err.(*activity.ActivityError)
-			if ok {
-				if ae.Reason == activity.ALREADY_EXISTS {
-					return utils.NewWebhookEdit(fmt.Sprintf("%v already exists in the pool", c.Name)), nil
-				}
-			}
-			return nil, fmt.Errorf("act.Create: %v", err)
-		}
-		return utils.NewWebhookEdit(fmt.Sprintf("%v added to the pool", c.Name)), nil
 	default:
 		return nil, fmt.Errorf("Activity type not supported: %v", c.ActivityType)
 	}
-	_, err := activity.Create(ctx, typ, c.Name, c.GuildID, nil, cl)
+	_, err := activity.Create(ctx, typ, c.Name, c.GuildID, info, cl)
 	if err != nil {
 		ae, ok := err.(*activity.ActivityError)
 		if ok {
