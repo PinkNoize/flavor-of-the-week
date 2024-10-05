@@ -205,7 +205,7 @@ resource "google_secret_manager_secret_iam_member" "cloud_func_member_rawg" {
 }
 
 resource "google_secret_manager_secret" "rawg_api" {
-  secret_id = "discord-api-${random_id.id.hex}"
+  secret_id = "rawg-secret-${random_id.id.hex}"
 
   replication {
     user_managed {
