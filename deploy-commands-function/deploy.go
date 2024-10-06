@@ -61,6 +61,20 @@ var commands = []*discordgo.ApplicationCommand{
 		},
 	},
 	{
+		Name:         "search",
+		Description:  "Search for a game",
+		Type:         discordgo.ChatApplicationCommand,
+		DMPermission: Ptr(false),
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Name:        "name",
+				Description: "Name of the game",
+				Type:        discordgo.ApplicationCommandOptionString,
+				Required:    true,
+			},
+		},
+	},
+	{
 		Name:         "nominations",
 		Description:  "Manage nominations for the next poll",
 		Type:         discordgo.ChatApplicationCommand,

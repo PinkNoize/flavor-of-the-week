@@ -203,6 +203,11 @@ func (c *DiscordCommand) fromApplicationCommand() (Command, error) {
 		return NewRemoveCommand(c.interaction.GuildID, args["name"].StringValue(), true), nil
 	case "stats":
 		return NewStatsCommand(c.interaction.GuildID), nil
+	case "search":
+		if pass, missing := utils.VerifyOpts(args, []string{"name"}); !pass {
+			return nil, fmt.Errorf("missing options: %v", missing)
+		}
+		return NewSearchCommand(args["name"].StringValue(), 0), nil
 	default:
 		return nil, fmt.Errorf("not a valid command: %v", commandData.Name)
 	}

@@ -98,7 +98,7 @@ func (c *NominationListCommand) Execute(ctx context.Context, cl *clients.Clients
 	customID := utils.NewCustomID("nominations", utils.Filter{
 		Name: c.Name,
 	}, c.Page)
-	edit := utils.BuildDiscordPage(entries, customID, lastPage)
+	edit := utils.BuildDiscordPage(entries, customID, &utils.PageOptions{IsLastPage: lastPage})
 	if edit.Embeds != nil && len(*edit.Embeds) == 0 {
 		return &discordgo.WebhookEdit{
 			Embeds: &[]*discordgo.MessageEmbed{
