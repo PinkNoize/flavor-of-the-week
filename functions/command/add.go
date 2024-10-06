@@ -67,5 +67,5 @@ func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discord
 		}
 		return nil, fmt.Errorf("act.Create: %v", err)
 	}
-	return utils.NewWebhookEdit(fmt.Sprintf("%v added to the pool", c.Name)), nil
+	return utils.NewWebhookEdit(fmt.Sprintf("%v added to the pool", name)), nil
 }
