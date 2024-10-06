@@ -29,10 +29,15 @@ func (c *SearchCommand) Execute(ctx context.Context, cl *clients.Clients) (*disc
 		return nil, fmt.Errorf("SearchGame: %v", err)
 	}
 	entries := make([]utils.GameEntry, 0, len(results))
+	menuOptions := make([]discordgo.SelectMenuOption, 0, len(results))
 	for _, res := range results {
 		entries = append(entries, utils.GameEntry{
 			Name:     res.Name,
 			ImageURL: res.ImageBackground,
+		})
+		menuOptions = append(menuOptions, discordgo.SelectMenuOption{
+			Label: res.Name,
+			Value: res.Slug,
 		})
 	}
 	// ceil(totalResults / SEARCH_PAGE_SIZE)
@@ -45,5 +50,10 @@ func (c *SearchCommand) Execute(ctx context.Context, cl *clients.Clients) (*disc
 	)
 	return utils.BuildDiscordPage(entries, customID, &utils.PageOptions{
 		TotalPages: &totalPages,
+	}, &discordgo.SelectMenu{
+		MenuType:    discordgo.StringSelectMenu,
+		Placeholder: "Select a game to add to the pool",
+		Options:     menuOptions,
+		MaxValues:   1,
 	}), nil
 }

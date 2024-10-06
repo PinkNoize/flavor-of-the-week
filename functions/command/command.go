@@ -232,6 +232,14 @@ func (c *DiscordCommand) fromMessageComponent() (Command, error) {
 		case "search":
 			return NewSearchCommand(customID.Filter.Name, customID.Page), nil
 		}
+	case discordgo.SelectMenuComponent:
+		switch customID.Type {
+		case "add":
+			if len(msgData.Values) > 0 {
+				return NewAddCommand(c.interaction.GuildID, "game", msgData.Values[0]), nil
+			}
+			return nil, fmt.Errorf("No values provided: %v", msgData.Values)
+		}
 	}
 	return nil, fmt.Errorf("Unexpected message component: %v", msgData)
 }

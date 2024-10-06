@@ -55,7 +55,8 @@ type GameEntry struct {
 	ImageURL    string
 }
 
-func BuildDiscordPage(gameEntries []GameEntry, customID *CustomID, pageOpt *PageOptions) *discordgo.WebhookEdit {
+// This needs to be refactored with some kind of options factory
+func BuildDiscordPage(gameEntries []GameEntry, customID *CustomID, pageOpt *PageOptions, selectMenu *discordgo.SelectMenu) *discordgo.WebhookEdit {
 	embeds := make([]*discordgo.MessageEmbed, 0, len(gameEntries))
 	for _, ent := range gameEntries {
 		var thumbnail *discordgo.MessageEmbedThumbnail
@@ -108,32 +109,40 @@ func BuildDiscordPage(gameEntries []GameEntry, customID *CustomID, pageOpt *Page
 		pageLabel = fmt.Sprintf("%v/??", currentPage+1)
 	}
 
-	return &discordgo.WebhookEdit{
-		Embeds: &embeds,
-		Components: &[]discordgo.MessageComponent{
-			discordgo.ActionsRow{
-				Components: []discordgo.MessageComponent{
-					discordgo.Button{
-						Label:    "Prev",
-						Style:    discordgo.SecondaryButton,
-						Disabled: currentPage == 0,
-						CustomID: prevCustomIDJson,
-					},
-					discordgo.Button{
-						Label:    pageLabel,
-						Style:    discordgo.SecondaryButton,
-						Disabled: true,
-						CustomID: "{}",
-					},
-					discordgo.Button{
-						Label:    "Next",
-						Style:    discordgo.SecondaryButton,
-						Disabled: pageOpt.IsLastPage,
-						CustomID: nextCustomIDJson,
-					},
-				},
+	components := make([]discordgo.MessageComponent, 0, 2)
+	if selectMenu != nil {
+		components = append(components, discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				selectMenu,
+			},
+		})
+	}
+	components = append(components, discordgo.ActionsRow{
+		Components: []discordgo.MessageComponent{
+			discordgo.Button{
+				Label:    "Prev",
+				Style:    discordgo.SecondaryButton,
+				Disabled: currentPage == 0,
+				CustomID: prevCustomIDJson,
+			},
+			discordgo.Button{
+				Label:    pageLabel,
+				Style:    discordgo.SecondaryButton,
+				Disabled: true,
+				CustomID: "{}",
+			},
+			discordgo.Button{
+				Label:    "Next",
+				Style:    discordgo.SecondaryButton,
+				Disabled: pageOpt.IsLastPage,
+				CustomID: nextCustomIDJson,
 			},
 		},
+	})
+
+	return &discordgo.WebhookEdit{
+		Embeds:     &embeds,
+		Components: &components,
 	}
 }
 
