@@ -103,7 +103,7 @@ func BuildDiscordPage(gameEntries []GameEntry, customID *CustomID, pageOpt *Page
 		} else {
 			pageOpt.IsLastPage = false
 		}
-		pageLabel = fmt.Sprintf("%v/%v", currentPage+1, min(*pageOpt.TotalPages, 1))
+		pageLabel = fmt.Sprintf("%v/%v", currentPage+1, max(*pageOpt.TotalPages, 1))
 	} else {
 		pageLabel = fmt.Sprintf("%v/??", currentPage+1)
 	}
