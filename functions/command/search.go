@@ -40,6 +40,11 @@ func (c *SearchCommand) Execute(ctx context.Context, cl *clients.Clients) (*disc
 			Value: res.Slug,
 		})
 	}
+	menuCustomID, err := utils.NewCustomID("add", utils.Filter{}, c.Page).ToJson()
+	if err != nil {
+		return nil, fmt.Errorf("ToJson: %v", err)
+	}
+
 	// ceil(totalResults / SEARCH_PAGE_SIZE)
 	totalPages := (totalResults + SEARCH_PAGE_SIZE - 1) / SEARCH_PAGE_SIZE
 	customID := utils.NewCustomID("search",
@@ -55,5 +60,6 @@ func (c *SearchCommand) Execute(ctx context.Context, cl *clients.Clients) (*disc
 		Placeholder: "Select a game to add to the pool",
 		Options:     menuOptions,
 		MaxValues:   1,
+		CustomID:    menuCustomID,
 	}), nil
 }
