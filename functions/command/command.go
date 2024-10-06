@@ -229,6 +229,8 @@ func (c *DiscordCommand) fromMessageComponent() (Command, error) {
 			return NewPoolListCommand(c.interaction.GuildID, customID.Filter.Name, customID.Filter.Type, customID.Page), nil
 		case "nominations":
 			return NewNominationListCommand(c.interaction.GuildID, c.interaction.Member.User.ID, customID.Filter.Name, customID.Page), nil
+		case "search":
+			return NewSearchCommand(customID.Filter.Name, customID.Page), nil
 		}
 	}
 	return nil, fmt.Errorf("Unexpected message component: %v", msgData)
