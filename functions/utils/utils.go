@@ -98,18 +98,18 @@ func BuildDiscordPage(gameEntries []GameEntry, customID *CustomID, pageOpt *Page
 
 	var pageLabel string
 	if pageOpt.TotalPages != nil {
-		if currentPage >= *pageOpt.TotalPages {
+		if currentPage >= *pageOpt.TotalPages-1 {
 			pageOpt.IsLastPage = true
+		} else {
+			pageOpt.IsLastPage = false
 		}
-		pageLabel = fmt.Sprintf("%v/%v", currentPage, *pageOpt.TotalPages)
+		pageLabel = fmt.Sprintf("%v/%v", currentPage+1, min(*pageOpt.TotalPages, 1))
 	} else {
-		pageLabel = fmt.Sprintf("%v/??", currentPage)
+		pageLabel = fmt.Sprintf("%v/??", currentPage+1)
 	}
 
-	pageTitle := fmt.Sprintf("**Page %v**", currentPage+1)
 	return &discordgo.WebhookEdit{
-		Content: &pageTitle,
-		Embeds:  &embeds,
+		Embeds: &embeds,
 		Components: &[]discordgo.MessageComponent{
 			discordgo.ActionsRow{
 				Components: []discordgo.MessageComponent{

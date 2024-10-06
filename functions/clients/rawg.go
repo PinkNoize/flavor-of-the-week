@@ -30,5 +30,5 @@ func (r *Rawg) GetGame(ctx context.Context, game string) (*rawg.GameDetailed, er
 
 func (r *Rawg) SearchGame(ctx context.Context, name string, page, pageSize int) ([]*rawg.Game, int, error) {
 	ctxzap.Info(ctx, "RAWG: Searching games", zap.String("name", name), zap.String("type", "GetGames"))
-	return r.client.GetGames(ctx, rawg.NewGamesFilter().SetPageSize(pageSize).SetPage(page).SetSearch(name))
+	return r.client.GetGames(ctx, rawg.NewGamesFilter().SetPageSize(pageSize).SetPage(page+1).SetSearch(name))
 }

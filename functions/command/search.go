@@ -35,7 +35,8 @@ func (c *SearchCommand) Execute(ctx context.Context, cl *clients.Clients) (*disc
 			ImageURL: res.ImageBackground,
 		})
 	}
-	isLastPage := totalResults/SEARCH_PAGE_SIZE >= c.Page
+	// ceil(totalResults / SEARCH_PAGE_SIZE)
+	totalPages := (totalResults + SEARCH_PAGE_SIZE - 1) / SEARCH_PAGE_SIZE
 	customID := utils.NewCustomID("search",
 		utils.Filter{
 			Name: c.Name,
@@ -43,7 +44,6 @@ func (c *SearchCommand) Execute(ctx context.Context, cl *clients.Clients) (*disc
 		c.Page,
 	)
 	return utils.BuildDiscordPage(entries, customID, &utils.PageOptions{
-		IsLastPage: isLastPage,
-		TotalPages: &totalResults,
+		TotalPages: &totalPages,
 	}), nil
 }
