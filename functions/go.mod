@@ -3,6 +3,7 @@ module github.com/PinkNoize/flavor-of-the-week/functions
 go 1.22.7
 
 require (
+	github.com/dimuska139/rawg-sdk-go/v3 v3.0.1-0.20220528100133-4f9c741ea59a
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	google.golang.org/api v0.196.0
 )
@@ -14,7 +15,6 @@ require (
 	cloud.google.com/go/compute/metadata v0.5.0 // indirect
 	cloud.google.com/go/iam v1.2.0 // indirect
 	cloud.google.com/go/longrunning v0.6.0 // indirect
-	github.com/dimuska139/rawg-sdk-go/v3 v3.0.1-0.20220528100133-4f9c741ea59a // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
