@@ -44,13 +44,18 @@ func (c *CustomID) ToJson() (string, error) {
 	return string(b), nil
 }
 
+type PageOptions struct {
+	TotalPages *int
+	IsLastPage bool
+}
+
 type GameEntry struct {
 	Name        string
-	Nominations int
+	Nominations *int
 	ImageURL    string
 }
 
-func BuildDiscordPage(gameEntries []GameEntry, customID *CustomID, isLastPage bool) *discordgo.WebhookEdit {
+func BuildDiscordPage(gameEntries []GameEntry, customID *CustomID, pageOpt *PageOptions) *discordgo.WebhookEdit {
 	embeds := make([]*discordgo.MessageEmbed, 0, len(gameEntries))
 	for _, ent := range gameEntries {
 		var thumbnail *discordgo.MessageEmbedThumbnail
@@ -59,10 +64,14 @@ func BuildDiscordPage(gameEntries []GameEntry, customID *CustomID, isLastPage bo
 				URL: ent.ImageURL,
 			}
 		}
+		description := ""
+		if ent.Nominations != nil {
+			description = fmt.Sprintf("Nominations: %v", *ent.Nominations)
+		}
 		embeds = append(embeds, &discordgo.MessageEmbed{
 			Type:        discordgo.EmbedTypeRich,
 			Title:       ent.Name,
-			Description: fmt.Sprintf("Nominations: %v", ent.Nominations),
+			Description: description,
 			Thumbnail:   thumbnail,
 		})
 	}
@@ -87,6 +96,16 @@ func BuildDiscordPage(gameEntries []GameEntry, customID *CustomID, isLastPage bo
 		nextCustomIDJson = ""
 	}
 
+	var pageLabel string
+	if pageOpt.TotalPages != nil {
+		if currentPage >= *pageOpt.TotalPages {
+			pageOpt.IsLastPage = true
+		}
+		pageLabel = fmt.Sprintf("%v/%v", currentPage, *pageOpt.TotalPages)
+	} else {
+		pageLabel = fmt.Sprintf("%v/??", currentPage)
+	}
+
 	pageTitle := fmt.Sprintf("**Page %v**", currentPage+1)
 	return &discordgo.WebhookEdit{
 		Content: &pageTitle,
@@ -101,9 +120,15 @@ func BuildDiscordPage(gameEntries []GameEntry, customID *CustomID, isLastPage bo
 						CustomID: prevCustomIDJson,
 					},
 					discordgo.Button{
+						Label:    pageLabel,
+						Style:    discordgo.SecondaryButton,
+						Disabled: true,
+						CustomID: "{}",
+					},
+					discordgo.Button{
 						Label:    "Next",
 						Style:    discordgo.SecondaryButton,
-						Disabled: isLastPage,
+						Disabled: pageOpt.IsLastPage,
 						CustomID: nextCustomIDJson,
 					},
 				},

@@ -251,7 +251,7 @@ func GetActivitiesPage(ctx context.Context, guildID string, pageNum int, opts *A
 			return []utils.GameEntry{
 				{
 					Name:        opts.Name,
-					Nominations: len(act.inner.Nominations),
+					Nominations: firestore.Ptr(len(act.inner.Nominations)),
 					ImageURL:    imageUrl,
 				},
 			}, true, nil
@@ -307,7 +307,7 @@ func GetActivitiesPage(ctx context.Context, guildID string, pageNum int, opts *A
 		}
 		results = append(results, utils.GameEntry{
 			Name:        inAct.Name,
-			Nominations: len(inAct.Nominations),
+			Nominations: firestore.Ptr(len(inAct.Nominations)),
 			ImageURL:    imageUrl,
 		})
 	}

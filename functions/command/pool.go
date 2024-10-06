@@ -46,5 +46,5 @@ func (c *PoolListCommand) Execute(ctx context.Context, cl *clients.Clients) (*di
 		Name: c.Name,
 		Type: actType,
 	}, c.Page)
-	return utils.BuildDiscordPage(entries, customID, lastPage), nil
+	return utils.BuildDiscordPage(entries, customID, &utils.PageOptions{IsLastPage: lastPage}), nil
 }
