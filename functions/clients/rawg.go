@@ -9,6 +9,10 @@ import (
 	"go.uber.org/zap"
 )
 
+const STEAM_STORE int = 1
+const GOG_STORE int = 5
+const EPIC_GAMES int = 11
+
 type Rawg struct {
 	client *rawg.Client
 }
@@ -30,5 +34,5 @@ func (r *Rawg) GetGame(ctx context.Context, game string) (*rawg.GameDetailed, er
 
 func (r *Rawg) SearchGame(ctx context.Context, name string, page, pageSize int) ([]*rawg.Game, int, error) {
 	ctxzap.Info(ctx, "RAWG: Searching games", zap.String("name", name), zap.String("type", "GetGames"))
-	return r.client.GetGames(ctx, rawg.NewGamesFilter().SetPageSize(pageSize).SetPage(page+1).SetSearch(name))
+	return r.client.GetGames(ctx, rawg.NewGamesFilter().SetPageSize(pageSize).SetPage(page+1).SetStores(STEAM_STORE, GOG_STORE, EPIC_GAMES).SetSearch(name))
 }
