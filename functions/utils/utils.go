@@ -1,48 +1,12 @@
 package utils
 
 import (
-	"encoding/json"
 	"fmt"
 
+	"github.com/PinkNoize/flavor-of-the-week/functions/customid"
 	"github.com/bwmarrin/discordgo"
 	"go.uber.org/zap"
 )
-
-type Filter struct {
-	Name string
-	Type string
-}
-
-type CustomID struct {
-	Type   string
-	Filter Filter
-	Page   int
-}
-
-func NewCustomID(typ string, filter Filter, page int) *CustomID {
-	return &CustomID{
-		Type:   typ,
-		Filter: filter,
-		Page:   page,
-	}
-}
-
-func ParseCustomID(js string) (*CustomID, error) {
-	var customID CustomID
-	err := json.Unmarshal([]byte(js), &customID)
-	if err != nil {
-		return nil, fmt.Errorf("Unmarshal: %v", err)
-	}
-	return &customID, nil
-}
-
-func (c *CustomID) ToJson() (string, error) {
-	b, err := json.Marshal(c)
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
-}
 
 type PageOptions struct {
 	TotalPages *int
@@ -56,7 +20,7 @@ type GameEntry struct {
 }
 
 // This needs to be refactored with some kind of options factory
-func BuildDiscordPage(gameEntries []GameEntry, customID *CustomID, pageOpt *PageOptions, selectMenu *discordgo.SelectMenu) *discordgo.WebhookEdit {
+func BuildDiscordPage(gameEntries []GameEntry, customID *customid.CustomID, pageOpt *PageOptions, selectMenu *discordgo.SelectMenu) *discordgo.WebhookEdit {
 	embeds := make([]*discordgo.MessageEmbed, 0, len(gameEntries))
 	for _, ent := range gameEntries {
 		var thumbnail *discordgo.MessageEmbedThumbnail
@@ -82,7 +46,7 @@ func BuildDiscordPage(gameEntries []GameEntry, customID *CustomID, pageOpt *Page
 	prevPageNum := max(currentPage-1, 0)
 	prevCustomID := *customID
 	prevCustomID.Page = prevPageNum
-	prevCustomIDJson, err := prevCustomID.ToJson()
+	prevCustomIDJson, err := prevCustomID.ToDiscordCustomID()
 	if err != nil {
 		zap.Error(err)
 		prevCustomIDJson = ""
@@ -91,7 +55,7 @@ func BuildDiscordPage(gameEntries []GameEntry, customID *CustomID, pageOpt *Page
 	nextPageNum := currentPage + 1
 	nextCustomID := *customID
 	nextCustomID.Page = nextPageNum
-	nextCustomIDJson, err := nextCustomID.ToJson()
+	nextCustomIDJson, err := nextCustomID.ToDiscordCustomID()
 	if err != nil {
 		zap.Error(err)
 		nextCustomIDJson = ""

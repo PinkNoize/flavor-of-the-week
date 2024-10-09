@@ -21,7 +21,7 @@ func NewRawg(rawgToken string) *Rawg {
 	return &Rawg{
 		rawg.NewClient(http.DefaultClient, &rawg.Config{
 			ApiKey:   rawgToken,
-			Language: "us",
+			Language: "en",
 			Rps:      5,
 		}),
 	}

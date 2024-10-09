@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
+	"github.com/PinkNoize/flavor-of-the-week/functions/customid"
 	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
 	"github.com/bwmarrin/discordgo"
 )
@@ -12,8 +13,9 @@ import (
 const SEARCH_PAGE_SIZE int = 5
 
 type SearchCommand struct {
-	Name string
-	Page int
+	Name     string
+	Page     int
+	CustomID *customid.CustomID
 }
 
 func NewSearchCommand(name string, page int) *SearchCommand {
@@ -23,7 +25,25 @@ func NewSearchCommand(name string, page int) *SearchCommand {
 	}
 }
 
+func NewSearchCommandFromCustomID(customID *customid.CustomID) *SearchCommand {
+	return &SearchCommand{
+		Name:     customID.Filter().Name,
+		Page:     customID.Page,
+		CustomID: customID,
+	}
+}
+
 func (c *SearchCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookEdit, error) {
+	if c.CustomID == nil {
+		customID, err := customid.CreateCustomID(ctx, "search", customid.Filter{
+			Name: c.Name,
+		}, c.Page, cl)
+		if err != nil {
+			return nil, fmt.Errorf("CreateCustomID: %v", err)
+		}
+		c.CustomID = customID
+	}
+
 	results, totalResults, err := cl.Rawg().SearchGame(ctx, c.Name, c.Page, SEARCH_PAGE_SIZE)
 	if err != nil {
 		return nil, fmt.Errorf("SearchGame: %v", err)
@@ -40,20 +60,11 @@ func (c *SearchCommand) Execute(ctx context.Context, cl *clients.Clients) (*disc
 			Value: res.Slug,
 		})
 	}
-	menuCustomID, err := utils.NewCustomID("add", utils.Filter{}, c.Page).ToJson()
-	if err != nil {
-		return nil, fmt.Errorf("ToJson: %v", err)
-	}
+	menuCustomID := fmt.Sprintf(`{"type":"add","page":%v}`, c.Page)
 
 	// ceil(totalResults / SEARCH_PAGE_SIZE)
 	totalPages := (totalResults + SEARCH_PAGE_SIZE - 1) / SEARCH_PAGE_SIZE
-	customID := utils.NewCustomID("search",
-		utils.Filter{
-			Name: c.Name,
-		},
-		c.Page,
-	)
-	return utils.BuildDiscordPage(entries, customID, &utils.PageOptions{
+	return utils.BuildDiscordPage(entries, c.CustomID, &utils.PageOptions{
 		TotalPages: &totalPages,
 	}, &discordgo.SelectMenu{
 		MenuType:    discordgo.StringSelectMenu,

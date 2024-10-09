@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
+	"github.com/PinkNoize/flavor-of-the-week/functions/customid"
 	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
 	"github.com/bwmarrin/discordgo"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
@@ -116,12 +117,12 @@ func (c *DiscordCommand) CommandName() string {
 	return c.interaction.ApplicationCommandData().Name
 }
 
-func (c *DiscordCommand) ToCommand() (Command, error) {
+func (c *DiscordCommand) ToCommand(ctx context.Context, cl *clients.Clients) (Command, error) {
 	switch c.Type() {
 	case discordgo.InteractionApplicationCommand:
 		return c.fromApplicationCommand()
 	case discordgo.InteractionMessageComponent:
-		return c.fromMessageComponent()
+		return c.fromMessageComponent(ctx, cl)
 	}
 	return nil, fmt.Errorf("Unexpected interaction type: %v", c.Type())
 }
@@ -166,7 +167,7 @@ func (c *DiscordCommand) fromApplicationCommand() (Command, error) {
 			if c.interaction.Member == nil {
 				return nil, fmt.Errorf("Member not found in interaction")
 			}
-			return NewNominationListCommand(c.interaction.GuildID, c.interaction.Member.User.ID, name, 0), nil
+			return NewNominationListCommand(c.interaction.GuildID, c.interaction.Member.User.ID, name), nil
 		default:
 			return nil, fmt.Errorf("not a valid command: %v", subcmd.Name)
 		}
@@ -181,7 +182,7 @@ func (c *DiscordCommand) fromApplicationCommand() (Command, error) {
 		if ok {
 			actType = actTypeOpt.StringValue()
 		}
-		return NewPoolListCommand(c.interaction.GuildID, name, actType, 0), nil
+		return NewPoolListCommand(c.interaction.GuildID, name, actType), nil
 	case "start-poll":
 		return NewStartPollCommand(c.interaction.GuildID), nil
 	case "end-poll":
@@ -213,27 +214,27 @@ func (c *DiscordCommand) fromApplicationCommand() (Command, error) {
 	}
 }
 
-func (c *DiscordCommand) fromMessageComponent() (Command, error) {
+func (c *DiscordCommand) fromMessageComponent(ctx context.Context, cl *clients.Clients) (Command, error) {
 	if c.Type() != discordgo.InteractionMessageComponent {
 		return nil, fmt.Errorf("not a valid message")
 	}
 	msgData := c.interaction.MessageComponentData()
-	customID, err := utils.ParseCustomID(msgData.CustomID)
+	customID, err := customid.GetCustomID(ctx, msgData.CustomID, cl)
 	if err != nil {
 		return nil, err
 	}
 	switch msgData.ComponentType {
 	case discordgo.ButtonComponent:
-		switch customID.Type {
+		switch customID.Type() {
 		case "pool":
-			return NewPoolListCommand(c.interaction.GuildID, customID.Filter.Name, customID.Filter.Type, customID.Page), nil
+			return NewPoolListCommandFromCustomID(c.interaction.GuildID, customID), nil
 		case "nominations":
-			return NewNominationListCommand(c.interaction.GuildID, c.interaction.Member.User.ID, customID.Filter.Name, customID.Page), nil
+			return NewNominationListCommandFromCustomID(c.interaction.GuildID, c.interaction.Member.User.ID, customID), nil
 		case "search":
-			return NewSearchCommand(customID.Filter.Name, customID.Page), nil
+			return NewSearchCommandFromCustomID(customID), nil
 		}
 	case discordgo.SelectMenuComponent:
-		switch customID.Type {
+		switch customID.Type() {
 		case "add":
 			if len(msgData.Values) > 0 {
 				return NewAddCommand(c.interaction.GuildID, "game", msgData.Values[0]), nil
