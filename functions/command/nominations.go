@@ -6,6 +6,7 @@ import (
 
 	"github.com/PinkNoize/flavor-of-the-week/functions/activity"
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
+	"github.com/PinkNoize/flavor-of-the-week/functions/customid"
 	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
 	"github.com/bwmarrin/discordgo"
 )
@@ -71,23 +72,41 @@ func (c *NominationRemoveCommand) Execute(ctx context.Context, cl *clients.Clien
 }
 
 type NominationListCommand struct {
-	GuildID string
-	UserID  string
-	Name    string
-	Page    int
+	GuildID  string
+	UserID   string
+	Name     string
+	Page     int
+	CustomID *customid.CustomID
 }
 
-func NewNominationListCommand(guildID, userID, name string, page int) *NominationListCommand {
+func NewNominationListCommand(guildID, userID, name string) *NominationListCommand {
 	return &NominationListCommand{
 		GuildID: guildID,
 		UserID:  userID,
 		Name:    name,
-		Page:    page,
+	}
+}
+
+func NewNominationListCommandFromCustomID(guildID, userID string, customID *customid.CustomID) *NominationListCommand {
+	return &NominationListCommand{
+		GuildID:  guildID,
+		UserID:   userID,
+		Name:     customID.Filter().Name,
+		CustomID: customID,
 	}
 }
 
 func (c *NominationListCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookEdit, error) {
-	entries, lastPage, err := activity.GetActivitiesPage(ctx, c.GuildID, c.Page, &activity.ActivitesPageOptions{
+	if c.CustomID == nil {
+		customID, err := customid.CreateCustomID(ctx, "nominations", customid.Filter{
+			Name: c.Name,
+		}, 0, cl)
+		if err != nil {
+			return nil, fmt.Errorf("CreateCustomID: %v", err)
+		}
+		c.CustomID = customID
+	}
+	entries, lastPage, err := activity.GetActivitiesPage(ctx, c.GuildID, c.CustomID.Page, &activity.ActivitesPageOptions{
 		Name:            c.Name,
 		NominationsOnly: true,
 		UserId:          c.UserID,
@@ -95,10 +114,7 @@ func (c *NominationListCommand) Execute(ctx context.Context, cl *clients.Clients
 	if err != nil {
 		return nil, fmt.Errorf("GetActivitesPage: %v", err)
 	}
-	customID := utils.NewCustomID("nominations", utils.Filter{
-		Name: c.Name,
-	}, c.Page)
-	edit := utils.BuildDiscordPage(entries, customID, &utils.PageOptions{IsLastPage: lastPage}, nil)
+	edit := utils.BuildDiscordPage(entries, c.CustomID, &utils.PageOptions{IsLastPage: lastPage}, nil)
 	if edit.Embeds != nil && len(*edit.Embeds) == 0 {
 		return &discordgo.WebhookEdit{
 			Embeds: &[]*discordgo.MessageEmbed{

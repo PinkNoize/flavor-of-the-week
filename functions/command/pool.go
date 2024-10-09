@@ -6,6 +6,7 @@ import (
 
 	"github.com/PinkNoize/flavor-of-the-week/functions/activity"
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
+	"github.com/PinkNoize/flavor-of-the-week/functions/customid"
 	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
 	"github.com/bwmarrin/discordgo"
 )
@@ -14,15 +15,23 @@ type PoolListCommand struct {
 	GuildID      string
 	Name         string
 	ActivityType string
-	Page         int
+	CustomID     *customid.CustomID
 }
 
-func NewPoolListCommand(guildID, name, activityType string, page int) *PoolListCommand {
+func NewPoolListCommand(guildID, name, activityType string) *PoolListCommand {
 	return &PoolListCommand{
 		GuildID:      guildID,
 		Name:         name,
 		ActivityType: activityType,
-		Page:         page,
+	}
+}
+
+func NewPoolListCommandFromCustomID(guildID string, customID *customid.CustomID) *PoolListCommand {
+	return &PoolListCommand{
+		GuildID:      guildID,
+		Name:         customID.Filter().Name,
+		ActivityType: customID.Filter().Type,
+		CustomID:     customID,
 	}
 }
 
@@ -34,7 +43,18 @@ func (c *PoolListCommand) Execute(ctx context.Context, cl *clients.Clients) (*di
 	case "game":
 		actType = activity.GAME
 	}
-	entries, lastPage, err := activity.GetActivitiesPage(ctx, c.GuildID, c.Page, &activity.ActivitesPageOptions{
+	if c.CustomID == nil {
+		customID, err := customid.CreateCustomID(ctx, "pool", customid.Filter{
+			Name: c.Name,
+			Type: actType,
+		}, 0, cl)
+		if err != nil {
+			return nil, fmt.Errorf("CreateCustomID: %v", err)
+		}
+		c.CustomID = customID
+	}
+
+	entries, lastPage, err := activity.GetActivitiesPage(ctx, c.GuildID, c.CustomID.Page, &activity.ActivitesPageOptions{
 		Name:            c.Name,
 		Type:            activity.ActivityType(actType),
 		NominationsOnly: false,
@@ -42,9 +62,5 @@ func (c *PoolListCommand) Execute(ctx context.Context, cl *clients.Clients) (*di
 	if err != nil {
 		return nil, fmt.Errorf("GetActivitesPage: %v", err)
 	}
-	customID := utils.NewCustomID("pool", utils.Filter{
-		Name: c.Name,
-		Type: actType,
-	}, c.Page)
-	return utils.BuildDiscordPage(entries, customID, &utils.PageOptions{IsLastPage: lastPage}, nil), nil
+	return utils.BuildDiscordPage(entries, c.CustomID, &utils.PageOptions{IsLastPage: lastPage}, nil), nil
 }

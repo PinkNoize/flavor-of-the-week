@@ -169,6 +169,20 @@ resource "google_firestore_index" "random-2-index" {
   }
 }
 
+resource "google_firestore_field" "state-ttl-delete" {
+  project    = var.project
+  database   = "(default)"
+  collection = "flavor-of-the-week-state"
+  field      = "timestamp"
+
+  // enables a TTL policy for the document based on the value of entries with this field
+  ttl_config {}
+
+  // Disable all single field indexes for the timestamp property.
+  index_config {}
+
+}
+
 # Cloud Functions role
 
 resource "google_service_account" "cloud_func_service_account" {

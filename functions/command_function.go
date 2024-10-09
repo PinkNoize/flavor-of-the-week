@@ -57,7 +57,7 @@ func CommandPubSub(ctx context.Context, m PubSubMessage) error {
 	var cmd command.Command
 	switch discordCmd.Type() {
 	case discordgo.InteractionApplicationCommand, discordgo.InteractionMessageComponent:
-		cmd, err = discordCmd.ToCommand()
+		cmd, err = discordCmd.ToCommand(ctx, clientLoader)
 		if err != nil {
 			return fmt.Errorf("converting to command: %v", err)
 		}
