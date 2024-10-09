@@ -42,6 +42,8 @@ func (c *PoolListCommand) Execute(ctx context.Context, cl *clients.Clients) (*di
 		actType = activity.ACTIVITY
 	case "game":
 		actType = activity.GAME
+	default:
+		actType = c.ActivityType
 	}
 	if c.CustomID == nil {
 		customID, err := customid.CreateCustomID(ctx, "pool", customid.Filter{

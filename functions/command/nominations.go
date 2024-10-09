@@ -75,7 +75,6 @@ type NominationListCommand struct {
 	GuildID  string
 	UserID   string
 	Name     string
-	Page     int
 	CustomID *customid.CustomID
 }
 
