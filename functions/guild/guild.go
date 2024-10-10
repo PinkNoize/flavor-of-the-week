@@ -110,6 +110,14 @@ func (g *Guild) GetFow(ctx context.Context) (*string, error) {
 	return g.inner.Fow, nil
 }
 
+func (g *Guild) GetFowCount(ctx context.Context) (int, error) {
+	err := g.load(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("load: %v", err)
+	}
+	return g.inner.FowCount, nil
+}
+
 func (g *Guild) GetActivePoll(ctx context.Context) (*PollInfo, error) {
 	err := g.load(ctx)
 	if err != nil {

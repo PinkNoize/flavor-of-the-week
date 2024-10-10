@@ -3,6 +3,7 @@ package activity
 import (
 	"context"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"math/rand"
 	"slices"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/firestore"
+	"cloud.google.com/go/firestore/apiv1/firestorepb"
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
 	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
 	"github.com/bwmarrin/discordgo"
@@ -495,4 +497,29 @@ func ClearNominations(ctx context.Context, guildID string, cl *clients.Clients) 
 		}
 	}
 	return nil
+}
+
+func GetPoolSize(ctx context.Context, guildID string, cl *clients.Clients) (int64, error) {
+	activityCollection, err := getCollection(cl)
+	if err != nil {
+		return 0, fmt.Errorf("getCollection: %v", err)
+	}
+	query := activityCollection.WhereEntity(&firestore.PropertyFilter{
+		Path:     "guild_id",
+		Operator: "==",
+		Value:    guildID,
+	})
+	aggregationQuery := query.NewAggregationQuery().WithCount("all")
+	results, err := aggregationQuery.Get(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("Get: %v", err)
+	}
+
+	count, ok := results["all"]
+	if !ok {
+		return 0, errors.New("firestore: couldn't get alias for COUNT from results")
+	}
+
+	countValue := count.(*firestorepb.Value).GetIntegerValue()
+	return countValue, nil
 }
