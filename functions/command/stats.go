@@ -7,7 +7,10 @@ import (
 	"github.com/PinkNoize/flavor-of-the-week/functions/activity"
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
 	"github.com/PinkNoize/flavor-of-the-week/functions/guild"
+	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
 	"github.com/bwmarrin/discordgo"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type StatsCommand struct {
@@ -21,7 +24,6 @@ func NewStatsCommand(guildID string) *StatsCommand {
 }
 
 func (c *StatsCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookEdit, error) {
-	// TODO: Display total pool count, # of all nominated items, FOW, # of FOWs
 	g, err := guild.GetGuild(ctx, c.GuildID, cl)
 	if err != nil {
 		return nil, fmt.Errorf("GetGuild: %v", err)
@@ -36,6 +38,9 @@ func (c *StatsCommand) Execute(ctx context.Context, cl *clients.Clients) (*disco
 	}
 	fow, err := g.GetFow(ctx)
 	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return utils.NewWebhookEdit("No stats to get. Try starting a poll"), nil
+		}
 		return nil, fmt.Errorf("GetFow: %v", err)
 	}
 	numFow, err := g.GetFowCount(ctx)

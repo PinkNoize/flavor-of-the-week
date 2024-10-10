@@ -60,7 +60,7 @@ func (g *Guild) load(ctx context.Context) error {
 	if !g.loaded {
 		snap, err := g.docRef.Get(ctx)
 		if err != nil {
-			return fmt.Errorf("Get: %v", err)
+			return err
 		}
 		err = snap.DataTo(&g.inner)
 		if err != nil {
@@ -85,7 +85,7 @@ func (g *Guild) SetPollChannel(ctx context.Context, channelId string) error {
 func (g *Guild) GetPollChannel(ctx context.Context) (*string, error) {
 	err := g.load(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("load: %v", err)
+		return nil, err
 	}
 	return g.inner.PollChannelID, nil
 }
@@ -105,7 +105,7 @@ func (g *Guild) SetFow(ctx context.Context, fow string) error {
 func (g *Guild) GetFow(ctx context.Context) (*string, error) {
 	err := g.load(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("load: %v", err)
+		return nil, err
 	}
 	return g.inner.Fow, nil
 }
@@ -113,7 +113,7 @@ func (g *Guild) GetFow(ctx context.Context) (*string, error) {
 func (g *Guild) GetFowCount(ctx context.Context) (int, error) {
 	err := g.load(ctx)
 	if err != nil {
-		return 0, fmt.Errorf("load: %v", err)
+		return 0, err
 	}
 	return g.inner.FowCount, nil
 }
@@ -121,7 +121,7 @@ func (g *Guild) GetFowCount(ctx context.Context) (int, error) {
 func (g *Guild) GetActivePoll(ctx context.Context) (*PollInfo, error) {
 	err := g.load(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("load: %v", err)
+		return nil, err
 	}
 	return g.inner.ActivePoll, nil
 }
