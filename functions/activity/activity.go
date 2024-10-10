@@ -369,6 +369,23 @@ func AutocompleteActivities(ctx context.Context, guildID, text string, cl *clien
 	return results, nil
 }
 
+func AutocompleteGames(ctx context.Context, guildID, text string, cl *clients.Clients) ([]*discordgo.ApplicationCommandOptionChoice, error) {
+	gamesList, count, err := cl.Rawg().SearchGame(ctx, text, 1, MAX_AUTOCOMPLETE_ENTRIES)
+	if err != nil {
+		return []*discordgo.ApplicationCommandOptionChoice{}, fmt.Errorf("Rawg.SearchGame: %v", err)
+	}
+
+	results := make([]*discordgo.ApplicationCommandOptionChoice, 0, count)
+	for _, game := range gamesList {
+		results = append(results, &discordgo.ApplicationCommandOptionChoice{
+			Name:  game.Name,
+			Value: game.Slug,
+		})
+	}
+
+	return results, nil
+}
+
 func GetTopNominations(ctx context.Context, guildID string, n int, cl *clients.Clients) ([]string, error) {
 	activityCollection, err := getCollection(cl)
 	if err != nil {
