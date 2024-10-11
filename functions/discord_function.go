@@ -94,6 +94,19 @@ func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			}
+		case "add":
+			commandData := cmd.Interaction().ApplicationCommandData()
+			cmd_args := utils.OptionsToMap(commandData.Options)
+			if nameOpt, ok := cmd_args["name"]; ok && nameOpt.Focused {
+				userText := nameOpt.StringValue()
+				if len(userText) >= MIN_AUTOCOMPLETE_CHARS {
+					autocompleteResults, err = clientLoader.Rawg().AutocompleteGames(ctx, cmd.Interaction().GuildID, userText, utils.MAX_AUTOCOMPLETE_ENTRIES)
+					if err != nil {
+						ctxzap.Error(ctx, fmt.Sprintf("AutocompleteGames: %v", err))
+						break
+					}
+				}
+			}
 		default:
 			slogger.Error("Autocomplete not implemented")
 			http.Error(w, "Autocomplete not implemented", http.StatusNotImplemented)
