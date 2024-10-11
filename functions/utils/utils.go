@@ -8,6 +8,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const MAX_AUTOCOMPLETE_ENTRIES int = 5
+
 type PageOptions struct {
 	TotalPages *int
 	IsLastPage bool
