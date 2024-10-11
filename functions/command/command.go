@@ -209,6 +209,8 @@ func (c *DiscordCommand) fromApplicationCommand() (Command, error) {
 			return nil, fmt.Errorf("missing options: %v", missing)
 		}
 		return NewSearchCommand(args["name"].StringValue(), 0), nil
+	case "help":
+		return NewHelpCommand(), nil
 	default:
 		return nil, fmt.Errorf("not a valid command: %v", commandData.Name)
 	}

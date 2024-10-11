@@ -161,6 +161,12 @@ var commands = []*discordgo.ApplicationCommand{
 		Type:         discordgo.ChatApplicationCommand,
 		DMPermission: Ptr(false),
 	},
+	{
+		Name:         "help",
+		Description:  "Displays info on how to use the bot",
+		Type:         discordgo.ChatApplicationCommand,
+		DMPermission: Ptr(false),
+	},
 	// Admin commands
 	{
 		Name:                     "poll-channel",

@@ -70,7 +70,7 @@ func (c *StartPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*d
 			Answers:          entries,
 			AllowMultiselect: true,
 			LayoutType:       discordgo.PollLayoutTypeDefault,
-			Duration:         1,
+			Duration:         48,
 		},
 	})
 	if err != nil {
