@@ -21,6 +21,15 @@ func (c *HelpCommand) Execute(ctx context.Context, cl *clients.Clients) (*discor
 				Title: "Flavor of the Week",
 				Description: `Flavor of the Week is a bot to maintain a backlog of games/activities and to automate voting on the "flavor of the week".
 
+The typical flow looks like:
+ 1. Add games & activities to the pool
+ 2. Nominate games/activities for the next pool
+ 3. Start & vote on a poll. A poll will include
+   - the previous flavor of the week
+   - top nominations
+   - random games/activities
+ 4. Play the game (or don't)
+
 You can view all commands by clicking on the apps button in your message bar.
 Here are some of the important commands:`,
 				Fields: []*discordgo.MessageEmbedField{
