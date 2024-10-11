@@ -74,7 +74,7 @@ func BuildDiscordPage(gameEntries []GameEntry, customID *customid.CustomID, page
 	}
 
 	components := make([]discordgo.MessageComponent, 0, 2)
-	if selectMenu != nil {
+	if selectMenu != nil && len(gameEntries) > 0 {
 		components = append(components, discordgo.ActionsRow{
 			Components: []discordgo.MessageComponent{
 				selectMenu,
