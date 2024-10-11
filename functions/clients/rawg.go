@@ -40,7 +40,7 @@ func (r *Rawg) SearchGame(ctx context.Context, name string, page, pageSize int) 
 }
 
 func (r *Rawg) AutocompleteGames(ctx context.Context, guildID, text string, entries int) ([]*discordgo.ApplicationCommandOptionChoice, error) {
-	gamesList, _, err := r.SearchGame(ctx, text, 1, entries)
+	gamesList, _, err := r.SearchGame(ctx, text, 0, entries)
 	if err != nil {
 		return []*discordgo.ApplicationCommandOptionChoice{}, fmt.Errorf("Rawg.SearchGame: %v", err)
 	}
