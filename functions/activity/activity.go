@@ -20,7 +20,6 @@ import (
 )
 
 const PAGE_SIZE int = 5
-const MAX_AUTOCOMPLETE_ENTRIES int = 5
 
 type ActivityType string
 
@@ -345,8 +344,8 @@ func AutocompleteActivities(ctx context.Context, guildID, text string, cl *clien
 	iter := query.Documents(ctx)
 	defer iter.Stop()
 
-	results := make([]*discordgo.ApplicationCommandOptionChoice, 0, MAX_AUTOCOMPLETE_ENTRIES)
-	for i := 0; i < MAX_AUTOCOMPLETE_ENTRIES; i++ {
+	results := make([]*discordgo.ApplicationCommandOptionChoice, 0, utils.MAX_AUTOCOMPLETE_ENTRIES)
+	for i := 0; i < utils.MAX_AUTOCOMPLETE_ENTRIES; i++ {
 		doc, err := iter.Next()
 		if err == iterator.Done {
 			break
