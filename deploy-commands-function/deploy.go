@@ -41,7 +41,7 @@ var commands = []*discordgo.ApplicationCommand{
 				Description:  "Name of the game/activity",
 				Type:         discordgo.ApplicationCommandOptionString,
 				Required:     true,
-				Autocomplete: false,
+				Autocomplete: true,
 			},
 		},
 	},
