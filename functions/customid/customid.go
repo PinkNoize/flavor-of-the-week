@@ -33,9 +33,9 @@ type CustomID struct {
 }
 
 type outCustomID struct {
-	Type string `json:"type"`
-	ID   string `json:"id"`
-	Page int    `json:"page"`
+	Type string  `json:"type"`
+	ID   *string `json:"id"`
+	Page int     `json:"page"`
 }
 
 func getCollection(cl *clients.Clients) (*firestore.CollectionRef, error) {
@@ -77,17 +77,25 @@ func GetCustomID(ctx context.Context, discordCustomID string, cl *clients.Client
 	if err != nil {
 		return nil, fmt.Errorf("Unmarshal: %v", err)
 	}
+	if oCustomID.ID == nil {
+		return &CustomID{
+			innerCustomID: innerCustomID{
+				Type: oCustomID.Type,
+			},
+		}, nil
+	}
+
 	stateCollection, err := getCollection(cl)
 	if err != nil {
 		return nil, fmt.Errorf("getCollection: %v", err)
 	}
-	stateDoc := stateCollection.Doc(oCustomID.ID)
+	stateDoc := stateCollection.Doc(*oCustomID.ID)
 	docSnap, err := stateDoc.Get(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("Get: %v", err)
 	}
 	id := CustomID{
-		docName: oCustomID.ID,
+		docName: *oCustomID.ID,
 		docRef:  stateDoc,
 		Page:    oCustomID.Page,
 	}
@@ -102,7 +110,7 @@ func GetCustomID(ctx context.Context, discordCustomID string, cl *clients.Client
 func (c *CustomID) ToDiscordCustomID() (string, error) {
 	oCustomID := outCustomID{
 		Type: c.innerCustomID.Type,
-		ID:   c.docName,
+		ID:   &c.docName,
 		Page: c.Page,
 	}
 
