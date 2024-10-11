@@ -45,7 +45,7 @@ func (r *Rawg) AutocompleteGames(ctx context.Context, guildID, text string, entr
 		return []*discordgo.ApplicationCommandOptionChoice{}, fmt.Errorf("Rawg.SearchGame: %v", err)
 	}
 
-	results := make([]*discordgo.ApplicationCommandOptionChoice, 0, count)
+	results := make([]*discordgo.ApplicationCommandOptionChoice, 0, entries)
 	for _, game := range gamesList {
 		results = append(results, &discordgo.ApplicationCommandOptionChoice{
 			Name:  game.Name,
