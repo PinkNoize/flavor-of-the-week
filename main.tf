@@ -42,7 +42,7 @@ resource "google_storage_bucket" "tfstate_bucket" {
 # Cloud Build Service account
 
 resource "google_service_account" "cloudbuild_service_account" {
-  account_id = "cloud-sa"
+  account_id = "cloud-sa-${random_id.id.hex}"
 }
 
 resource "google_project_iam_custom_role" "cloudbuild_policy_role" {
