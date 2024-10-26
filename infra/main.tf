@@ -42,6 +42,7 @@ resource "google_storage_bucket" "sources" {
 
 # Enable Firestore
 resource "google_app_engine_application" "app" {
+  count         = var.env == "main" ? 1 : 0
   project       = var.project
   location_id   = var.region
   database_type = "CLOUD_FIRESTORE"
