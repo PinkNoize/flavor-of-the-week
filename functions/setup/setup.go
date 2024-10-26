@@ -15,6 +15,7 @@ import (
 var ProjectID string = os.Getenv("PROJECT_ID")
 var CommandTopicID string = os.Getenv("COMMAND_TOPIC")
 var ENV string = os.Getenv("ENV")
+var _, Maintenance = os.LookupEnv("MAINTENANCE")
 
 var DiscordPubkey []byte
 var ClientLoader *clients.Clients

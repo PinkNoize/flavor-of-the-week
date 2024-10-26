@@ -40,6 +40,15 @@ func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
+	if setup.Maintenance {
+		err = writeMaintenanceResponse(w)
+		if err != nil {
+			slogger.Errorf("Error writing response: %v", err)
+			http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
+		}
+		return
+	}
+
 	cmd, err := command.FromReader(ctx, r.Body)
 	if err != nil {
 		slogger.Errorf("Error parsing command: %v", err)
@@ -147,6 +156,24 @@ func forwardCommand(ctx context.Context, command *command.DiscordCommand) error 
 	_, err := result.Get(ctx)
 	if err != nil {
 		return fmt.Errorf("Pubsub.Publish: %v", err)
+	}
+	return nil
+}
+
+func writeMaintenanceResponse(w http.ResponseWriter) error {
+	response := discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: "👷 Under Maintenance 👷",
+			Flags:   discordgo.MessageFlagsEphemeral,
+		},
+	}
+
+	// MUST SET HEADER BEFORE CONTENT
+	w.Header().Set("Content-Type", "application/json")
+	err := json.NewEncoder(w).Encode(response)
+	if err != nil {
+		return fmt.Errorf("writeMaintenanceResponse: jsonEncoder: %v", err)
 	}
 	return nil
 }
