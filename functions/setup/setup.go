@@ -1,4 +1,4 @@
-package functions
+package setup
 
 import (
 	"context"
@@ -12,30 +12,31 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var projectID string = os.Getenv("PROJECT_ID")
-var commandTopicID string = os.Getenv("COMMAND_TOPIC")
+var ProjectID string = os.Getenv("PROJECT_ID")
+var CommandTopicID string = os.Getenv("COMMAND_TOPIC")
+var ENV string = os.Getenv("ENV")
 
-var discordPubkey []byte
-var clientLoader *clients.Clients
-var commandTopic *pubsub.Topic
-var zapLogger *zap.Logger
-var zapSlogger *zap.SugaredLogger
+var DiscordPubkey []byte
+var ClientLoader *clients.Clients
+var CommandTopic *pubsub.Topic
+var ZapLogger *zap.Logger
+var ZapSlogger *zap.SugaredLogger
 
 func init() {
 	var err error
 	ctx := context.Background()
-	zapLogger, zapSlogger = setup_loggers()
-	pubsubClient, err := pubsub.NewClient(ctx, projectID)
+	ZapLogger, ZapSlogger = setup_loggers()
+	pubsubClient, err := pubsub.NewClient(ctx, ProjectID)
 	if err != nil {
-		zapSlogger.Fatalf("Failed to create pubsub client: %v", err)
+		ZapSlogger.Fatalf("Failed to create pubsub client: %v", err)
 	}
-	commandTopic = pubsubClient.Topic(commandTopicID)
+	CommandTopic = pubsubClient.Topic(CommandTopicID)
 
-	discordPubkey, err = hex.DecodeString(os.Getenv("DISCORD_PUBKEY"))
+	DiscordPubkey, err = hex.DecodeString(os.Getenv("DISCORD_PUBKEY"))
 	if err != nil {
-		zapSlogger.Fatalf("Failed to decode public key: %v", err)
+		ZapSlogger.Fatalf("Failed to decode public key: %v", err)
 	}
-	clientLoader = clients.New(ctx, projectID, os.Getenv("DISCORD_TOKEN"), os.Getenv("RAWG_TOKEN"))
+	ClientLoader = clients.New(ctx, ProjectID, os.Getenv("DISCORD_TOKEN"), os.Getenv("RAWG_TOKEN"))
 }
 
 func setup_loggers() (*zap.Logger, *zap.SugaredLogger) {

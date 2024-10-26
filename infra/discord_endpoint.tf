@@ -25,6 +25,7 @@ resource "google_cloudfunctions2_function" "discord_endpoint" {
       PROJECT_ID     = var.project,
       COMMAND_TOPIC  = google_pubsub_topic.command_topic.name,
       DISCORD_PUBKEY = var.discord_public_key,
+      ENV            = var.env,
     }
     secret_environment_variables {
       key        = "RAWG_TOKEN"

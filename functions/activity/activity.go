@@ -13,6 +13,7 @@ import (
 	"cloud.google.com/go/firestore"
 	"cloud.google.com/go/firestore/apiv1/firestorepb"
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
+	"github.com/PinkNoize/flavor-of-the-week/functions/setup"
 	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
 	"github.com/bwmarrin/discordgo"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
@@ -91,7 +92,7 @@ func getCollection(cl *clients.Clients) (*firestore.CollectionRef, error) {
 	if err != nil {
 		return nil, err
 	}
-	return firestoreClient.Collection("flavor-of-the-week"), nil
+	return firestoreClient.Collection(fmt.Sprintf("flavor-of-the-week-%v", setup.ENV)), nil
 }
 
 func GetActivity(ctx context.Context, name, guildID string, cl *clients.Clients) (*Activity, error) {

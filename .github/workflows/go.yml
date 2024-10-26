@@ -10,7 +10,7 @@ on:
       - "functions/**"
       - "deploy-commands-function/**"
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "staging" ]
     paths:
       - "functions/**"
       - "deploy-commands-function/**"

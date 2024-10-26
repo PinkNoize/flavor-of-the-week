@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/PinkNoize/flavor-of-the-week/functions/command"
+	"github.com/PinkNoize/flavor-of-the-week/functions/setup"
 	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
 	"github.com/bwmarrin/discordgo"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
@@ -23,7 +24,7 @@ type PubSubMessage struct {
 
 func CommandPubSub(ctx context.Context, m PubSubMessage) error {
 	var err error
-	logger, slogger := zapLogger, zapSlogger
+	logger, slogger := setup.ZapLogger, setup.ZapSlogger
 	defer func() {
 		err = errors.Join(slogger.Sync())
 		err = errors.Join(logger.Sync())
@@ -37,7 +38,7 @@ func CommandPubSub(ctx context.Context, m PubSubMessage) error {
 	var response *discordgo.WebhookEdit = nil
 	defer func() {
 		ctxzap.Info(ctx, "Sending Interaction response")
-		discordSession, err := clientLoader.Discord()
+		discordSession, err := setup.ClientLoader.Discord()
 		if err != nil {
 			ctxzap.Error(ctx, fmt.Sprintf("Failed to initalize discord client: %v", err))
 			return
@@ -57,12 +58,12 @@ func CommandPubSub(ctx context.Context, m PubSubMessage) error {
 	var cmd command.Command
 	switch discordCmd.Type() {
 	case discordgo.InteractionApplicationCommand, discordgo.InteractionMessageComponent:
-		cmd, err = discordCmd.ToCommand(ctx, clientLoader)
+		cmd, err = discordCmd.ToCommand(ctx, setup.ClientLoader)
 		if err != nil {
 			return fmt.Errorf("converting to command: %v", err)
 		}
 	}
-	response, err = cmd.Execute(ctx, clientLoader)
+	response, err = cmd.Execute(ctx, setup.ClientLoader)
 	if err != nil {
 		return fmt.Errorf("executing command: %v", err)
 	}
