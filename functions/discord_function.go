@@ -12,6 +12,7 @@ import (
 
 	"github.com/PinkNoize/flavor-of-the-week/functions/activity"
 	"github.com/PinkNoize/flavor-of-the-week/functions/command"
+	"github.com/PinkNoize/flavor-of-the-week/functions/setup"
 	"github.com/PinkNoize/flavor-of-the-week/functions/utils"
 	"github.com/bwmarrin/discordgo"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
@@ -21,14 +22,14 @@ const MIN_AUTOCOMPLETE_CHARS int = 2
 
 func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 	var err error
-	logger, slogger := zapLogger, zapSlogger
+	logger, slogger := setup.ZapLogger, setup.ZapSlogger
 	defer func() {
 		err = errors.Join(slogger.Sync())
 		err = errors.Join(logger.Sync())
 	}()
 	ctx := ctxzap.ToContext(r.Context(), logger)
 
-	verified := discordgo.VerifyInteraction(r, ed25519.PublicKey(discordPubkey))
+	verified := discordgo.VerifyInteraction(r, ed25519.PublicKey(setup.DiscordPubkey))
 	if !verified {
 		slogger.Infow("Failed signature verification",
 			"IP", r.RemoteAddr,
@@ -38,6 +39,15 @@ func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
+
+	if setup.Maintenance {
+		err = writeMaintenanceResponse(w)
+		if err != nil {
+			slogger.Errorf("Error writing response: %v", err)
+			http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
+		}
+		return
+	}
 
 	cmd, err := command.FromReader(ctx, r.Body)
 	if err != nil {
@@ -87,7 +97,7 @@ func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 			if nameOpt, ok := cmd_args["name"]; ok && nameOpt.Focused {
 				userText := nameOpt.StringValue()
 				if len(userText) >= MIN_AUTOCOMPLETE_CHARS {
-					autocompleteResults, err = activity.AutocompleteActivities(ctx, cmd.Interaction().GuildID, userText, clientLoader)
+					autocompleteResults, err = activity.AutocompleteActivities(ctx, cmd.Interaction().GuildID, userText, setup.ClientLoader)
 					if err != nil {
 						ctxzap.Error(ctx, fmt.Sprintf("AutocompleteActivities: %v", err))
 						break
@@ -100,7 +110,7 @@ func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 			if nameOpt, ok := cmd_args["name"]; ok && nameOpt.Focused {
 				userText := nameOpt.StringValue()
 				if len(userText) >= MIN_AUTOCOMPLETE_CHARS {
-					autocompleteResults, err = clientLoader.Rawg().AutocompleteGames(ctx, cmd.Interaction().GuildID, userText, utils.MAX_AUTOCOMPLETE_ENTRIES)
+					autocompleteResults, err = setup.ClientLoader.Rawg().AutocompleteGames(ctx, cmd.Interaction().GuildID, userText, utils.MAX_AUTOCOMPLETE_ENTRIES)
 					if err != nil {
 						ctxzap.Error(ctx, fmt.Sprintf("AutocompleteGames: %v", err))
 						break
@@ -140,12 +150,30 @@ func handlePing(ctx context.Context, w http.ResponseWriter) {
 }
 
 func forwardCommand(ctx context.Context, command *command.DiscordCommand) error {
-	result := commandTopic.Publish(ctx, &pubsub.Message{
+	result := setup.CommandTopic.Publish(ctx, &pubsub.Message{
 		Data: command.RawInteraction(),
 	})
 	_, err := result.Get(ctx)
 	if err != nil {
 		return fmt.Errorf("Pubsub.Publish: %v", err)
+	}
+	return nil
+}
+
+func writeMaintenanceResponse(w http.ResponseWriter) error {
+	response := discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: "👷 Under Maintenance 👷",
+			Flags:   discordgo.MessageFlagsEphemeral,
+		},
+	}
+
+	// MUST SET HEADER BEFORE CONTENT
+	w.Header().Set("Content-Type", "application/json")
+	err := json.NewEncoder(w).Encode(response)
+	if err != nil {
+		return fmt.Errorf("writeMaintenanceResponse: jsonEncoder: %v", err)
 	}
 	return nil
 }

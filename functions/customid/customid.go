@@ -8,6 +8,7 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
+	"github.com/PinkNoize/flavor-of-the-week/functions/setup"
 	"github.com/google/uuid"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 )
@@ -43,7 +44,7 @@ func getCollection(cl *clients.Clients) (*firestore.CollectionRef, error) {
 	if err != nil {
 		return nil, err
 	}
-	return firestoreClient.Collection("flavor-of-the-week-state"), nil
+	return firestoreClient.Collection(fmt.Sprintf("flavor-of-the-week-state-%v", setup.ENV)), nil
 }
 
 func CreateCustomID(ctx context.Context, typ string, filter Filter, page int, cl *clients.Clients) (*CustomID, error) {

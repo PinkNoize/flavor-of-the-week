@@ -50,7 +50,7 @@ resource "google_app_engine_application" "app" {
 resource "google_firestore_index" "pool-search-index" {
   project    = var.project
   database   = "(default)"
-  collection = "flavor-of-the-week"
+  collection = "flavor-of-the-week-${var.env}"
 
   fields {
     field_path = "guild_id"
@@ -66,7 +66,7 @@ resource "google_firestore_index" "pool-search-index" {
 resource "google_firestore_index" "pool-type-search-index" {
   project    = var.project
   database   = "(default)"
-  collection = "flavor-of-the-week"
+  collection = "flavor-of-the-week-${var.env}"
 
   fields {
     field_path = "type"
@@ -82,7 +82,7 @@ resource "google_firestore_index" "pool-type-search-index" {
 resource "google_firestore_index" "pool-autocomplete-index" {
   project    = var.project
   database   = "(default)"
-  collection = "flavor-of-the-week"
+  collection = "flavor-of-the-week-${var.env}"
 
   fields {
     field_path = "guild_id"
@@ -103,7 +103,7 @@ resource "google_firestore_index" "pool-autocomplete-index" {
 resource "google_firestore_index" "nominations-search-index" {
   project    = var.project
   database   = "(default)"
-  collection = "flavor-of-the-week"
+  collection = "flavor-of-the-week-${var.env}"
 
   fields {
     field_path   = "nominations"
@@ -124,7 +124,7 @@ resource "google_firestore_index" "nominations-search-index" {
 resource "google_firestore_index" "nominations-index" {
   project    = var.project
   database   = "(default)"
-  collection = "flavor-of-the-week"
+  collection = "flavor-of-the-week-${var.env}"
 
   fields {
     field_path = "guild_id"
@@ -140,7 +140,7 @@ resource "google_firestore_index" "nominations-index" {
 resource "google_firestore_index" "random-1-index" {
   project    = var.project
   database   = "(default)"
-  collection = "flavor-of-the-week"
+  collection = "flavor-of-the-week-${var.env}"
 
   fields {
     field_path = "guild_id"
@@ -156,7 +156,7 @@ resource "google_firestore_index" "random-1-index" {
 resource "google_firestore_index" "random-2-index" {
   project    = var.project
   database   = "(default)"
-  collection = "flavor-of-the-week"
+  collection = "flavor-of-the-week-${var.env}"
 
   fields {
     field_path = "guild_id"
@@ -172,7 +172,7 @@ resource "google_firestore_index" "random-2-index" {
 resource "google_firestore_field" "state-ttl-delete" {
   project    = var.project
   database   = "(default)"
-  collection = "flavor-of-the-week-state"
+  collection = "flavor-of-the-week-state-${var.env}"
   field      = "timestamp"
 
   // enables a TTL policy for the document based on the value of entries with this field
@@ -219,7 +219,7 @@ resource "google_secret_manager_secret_iam_member" "cloud_func_member_rawg" {
 }
 
 resource "google_secret_manager_secret" "rawg_api" {
-  secret_id = "rawg-secret-${random_id.id.hex}"
+  secret_id = "rawg-secret-${var.env}-${random_id.id.hex}"
 
   replication {
     user_managed {
@@ -233,7 +233,7 @@ resource "google_secret_manager_secret" "rawg_api" {
 # Command Pub/Sub
 
 resource "google_pubsub_topic" "command_topic" {
-  name = "command-topic-${random_id.id.hex}"
+  name = "command-topic-${var.env}-${random_id.id.hex}"
 }
 
 # Functions source

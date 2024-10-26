@@ -6,6 +6,7 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
+	"github.com/PinkNoize/flavor-of-the-week/functions/setup"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 )
 
@@ -32,7 +33,7 @@ func getCollection(cl *clients.Clients) (*firestore.CollectionRef, error) {
 	if err != nil {
 		return nil, err
 	}
-	return firestoreClient.Collection("flavor-of-the-week-guilds"), nil
+	return firestoreClient.Collection(fmt.Sprintf("flavor-of-the-week-guilds-%v", setup.ENV)), nil
 }
 
 func generateName(guildID string) string {

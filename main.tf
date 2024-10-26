@@ -172,13 +172,13 @@ resource "google_secret_manager_secret" "discord_api" {
 # Prod trigger
 
 resource "google_cloudbuild_trigger" "prod_trigger" {
-  name     = "prod-flavor-of-the-week-${random_id.id.hex}"
+  name     = "prod-flavor-of-the-week-${var.branch}-${random_id.id.hex}"
   location = var.region
 
   repository_event_config {
     repository = "projects/${var.project}/locations/${var.region}/connections/${var.repo_connection}/repositories/${var.repo_name}"
     push {
-      branch = "^main$"
+      branch = "^${var.branch}$"
     }
   }
   included_files = [
@@ -193,6 +193,7 @@ resource "google_cloudbuild_trigger" "prod_trigger" {
     _DISCORD_APP_ID     = var.discord_app_id,
     _DISCORD_PUBLIC_KEY = var.discord_public_key,
     _DISCORD_SECRET_ID  = google_secret_manager_secret.discord_api.id,
+    _ENV                = var.branch,
   }
 
   service_account = google_service_account.cloudbuild_service_account.id
@@ -256,14 +257,14 @@ resource "google_project_iam_member" "pr_role" {
 }
 
 resource "google_cloudbuild_trigger" "pr_trigger" {
-  name     = "pr-flavor-of-the-week-${random_id.id.hex}"
+  name     = "pr-flavor-of-the-week-${var.branch}-${random_id.id.hex}"
   location = var.region
 
   repository_event_config {
     repository = "projects/${var.project}/locations/${var.region}/connections/${var.repo_connection}/repositories/${var.repo_name}"
 
     pull_request {
-      branch          = "^main$"
+      branch          = "^${var.branch}$"
       invert_regex    = false
       comment_control = "COMMENTS_ENABLED"
     }
@@ -274,6 +275,7 @@ resource "google_cloudbuild_trigger" "pr_trigger" {
     _DISCORD_APP_ID     = var.discord_app_id,
     _DISCORD_PUBLIC_KEY = var.discord_public_key,
     _DISCORD_SECRET_ID  = google_secret_manager_secret.discord_api.id,
+    _ENV                = var.branch,
   }
 
   service_account = google_service_account.cloudbuild_service_account.id
