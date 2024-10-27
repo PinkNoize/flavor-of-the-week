@@ -155,12 +155,6 @@ resource "google_project_iam_member" "eventarc_admin" {
   member  = "serviceAccount:${google_service_account.cloudbuild_service_account.email}"
 }
 
-resource "google_project_iam_member" "cloudscheduler_admin" {
-  project = var.project
-  role    = "roles/cloudscheduler.admin"
-  member  = "serviceAccount:${google_service_account.cloudbuild_service_account.email}"
-}
-
 # Discord API secret
 
 resource "google_secret_manager_secret" "discord_api" {
@@ -222,7 +216,6 @@ resource "google_cloudbuild_trigger" "prod_trigger" {
     google_project_iam_member.eventarc_admin,
     google_project_iam_member.cloud_build_custom_role,
     google_project_iam_member.datastore_owner,
-    google_project_iam_member.cloudscheduler_admin,
   ]
 }
 
