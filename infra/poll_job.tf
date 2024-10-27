@@ -60,7 +60,7 @@ resource "google_cloudfunctions2_function" "poll" {
   event_trigger {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.command_topic.id
+    pubsub_topic   = google_pubsub_topic.poll_topic.id
     retry_policy   = "RETRY_POLICY_DO_NOT_RETRY"
   }
 }
