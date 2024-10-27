@@ -2,6 +2,7 @@ package functions
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -9,13 +10,21 @@ import (
 	"github.com/PinkNoize/flavor-of-the-week/functions/command"
 	"github.com/PinkNoize/flavor-of-the-week/functions/guild"
 	"github.com/PinkNoize/flavor-of-the-week/functions/setup"
-	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"go.uber.org/zap"
 )
 
-func PollPubSub(ctx context.Context, _ event.Event) error {
-	err := endActivePolls(ctx, setup.ClientLoader)
+func PollPubSub(ctx context.Context, _ PubSubMessage) error {
+	var err error
+	logger, slogger := setup.ZapLogger, setup.ZapSlogger
+	defer func() {
+		err = errors.Join(slogger.Sync())
+		err = errors.Join(logger.Sync())
+	}()
+	ctx = ctxzap.ToContext(ctx, logger)
+
+	ctxzap.Info(ctx, "Starting poll job")
+	err = endActivePolls(ctx, setup.ClientLoader)
 	if err != nil {
 		setup.ZapSlogger.Errorf("endActivePolls: %v", err)
 	}

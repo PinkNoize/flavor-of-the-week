@@ -160,7 +160,7 @@ func GetGuildsWithActivePolls(ctx context.Context, cl *clients.Clients) ([]*Guil
 		return nil, fmt.Errorf("getCollection: %v", err)
 	}
 
-	query := guildCollection.OrderBy("active_poll", firestore.Asc)
+	query := guildCollection.OrderBy("active_poll.channel_id", firestore.Asc)
 	iter := query.Documents(ctx)
 	defer iter.Stop()
 
