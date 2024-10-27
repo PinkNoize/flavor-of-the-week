@@ -32,6 +32,7 @@ func endActivePolls(ctx context.Context, cl *clients.Clients) error {
 	if err != nil {
 		return fmt.Errorf("GetGuildsWithActivePolls: %v", err)
 	}
+	ctxzap.Info(ctx, fmt.Sprintf("Found %v active polls", len(guilds)))
 	prevContext := ctx
 	for _, g := range guilds {
 		ctx = prevContext
@@ -51,6 +52,7 @@ func endActivePolls(ctx context.Context, cl *clients.Clients) error {
 			continue
 		}
 		if msg.Poll.Expiry != nil && msg.Poll.Expiry.Before(time.Now()) {
+			ctxzap.Info(ctx, fmt.Sprintf("Poll for %v has ended. Ending poll", g.GetGuildId()))
 			// End it if active
 			cmd := command.NewEndPollCommand(g.GetGuildId())
 			_, err = cmd.Execute(ctx, cl)
@@ -58,6 +60,8 @@ func endActivePolls(ctx context.Context, cl *clients.Clients) error {
 				ctxzap.Warn(ctx, fmt.Sprintf("EndPollCommandExecute: %v", err))
 				continue
 			}
+		} else {
+			ctxzap.Info(ctx, fmt.Sprintf("Poll for %v has not ended", g.GetGuildId()))
 		}
 	}
 	return nil
