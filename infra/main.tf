@@ -27,6 +27,7 @@ module "project-services" {
     "run.googleapis.com",
     "eventarc.googleapis.com",
     "firestore.googleapis.com",
+    "cloudscheduler.googleapis.com",
   ]
 }
 
