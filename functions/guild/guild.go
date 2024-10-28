@@ -8,6 +8,7 @@ import (
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
 	"github.com/PinkNoize/flavor-of-the-week/functions/setup"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
+	"google.golang.org/api/iterator"
 )
 
 type PollInfo struct {
@@ -41,12 +42,12 @@ func generateName(guildID string) string {
 }
 
 func GetGuild(ctx context.Context, guildID string, cl *clients.Clients) (*Guild, error) {
-	activityCollection, err := getCollection(cl)
+	guildCollection, err := getCollection(cl)
 	if err != nil {
 		return nil, fmt.Errorf("getCollection: %v", err)
 	}
 	docName := generateName(guildID)
-	guildDoc := activityCollection.Doc(docName)
+	guildDoc := guildCollection.Doc(docName)
 	return &Guild{
 		docRef: guildDoc,
 		loaded: false,
@@ -151,4 +152,38 @@ func (g *Guild) SetActivePoll(ctx context.Context, pollInfo *PollInfo) error {
 	}
 	g.inner.ActivePoll = pollInfo
 	return nil
+}
+
+func GetGuildsWithActivePolls(ctx context.Context, cl *clients.Clients) ([]*Guild, error) {
+	guildCollection, err := getCollection(cl)
+	if err != nil {
+		return nil, fmt.Errorf("getCollection: %v", err)
+	}
+
+	query := guildCollection.OrderBy("active_poll.channel_id", firestore.Asc)
+	iter := query.Documents(ctx)
+	defer iter.Stop()
+
+	results := make([]*Guild, 0)
+
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("iter.Next: %v", err)
+		}
+		var inGuild innerGuild
+		err = doc.DataTo(&inGuild)
+		if err != nil {
+			return nil, fmt.Errorf("doc.DataTo: %v", err)
+		}
+		results = append(results, &Guild{
+			docRef: doc.Ref,
+			loaded: true,
+			inner:  inGuild,
+		})
+	}
+	return results, nil
 }
