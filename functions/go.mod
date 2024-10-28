@@ -40,7 +40,7 @@ require (
 require (
 	cloud.google.com/go/firestore v1.17.0
 	cloud.google.com/go/pubsub v1.43.0
-	github.com/bwmarrin/discordgo v0.28.2-0.20240729124523-41a66e5f151f
+	github.com/bwmarrin/discordgo v0.28.2-0.20241006165315-247b6f7a76f9
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/elliotchance/orderedmap/v2 v2.4.0
 	github.com/gorilla/websocket v1.4.2 // indirect
@@ -54,5 +54,3 @@ require (
 	google.golang.org/genproto v0.0.0-20240903143218-8af14fe29dc1 // indirect
 	google.golang.org/grpc v1.66.0
 )
-
-replace github.com/bwmarrin/discordgo => github.com/PinkNoize/discordgo v0.0.0-20241002030129-edfeb5a0adc2
