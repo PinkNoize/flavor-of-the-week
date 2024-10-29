@@ -107,13 +107,15 @@ func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 		case "add":
 			commandData := cmd.Interaction().ApplicationCommandData()
 			cmd_args := utils.OptionsToMap(commandData.Options)
-			if nameOpt, ok := cmd_args["name"]; ok && nameOpt.Focused {
-				userText := nameOpt.StringValue()
-				if len(userText) >= MIN_AUTOCOMPLETE_CHARS {
-					autocompleteResults, err = setup.ClientLoader.Rawg().AutocompleteGames(ctx, cmd.Interaction().GuildID, userText, utils.MAX_AUTOCOMPLETE_ENTRIES)
-					if err != nil {
-						ctxzap.Error(ctx, fmt.Sprintf("AutocompleteGames: %v", err))
-						break
+			if typeOpt, ok := cmd_args["type"]; ok && typeOpt.StringValue() == "game" {
+				if nameOpt, ok := cmd_args["name"]; ok && nameOpt.Focused {
+					userText := nameOpt.StringValue()
+					if len(userText) >= MIN_AUTOCOMPLETE_CHARS {
+						autocompleteResults, err = setup.ClientLoader.Rawg().AutocompleteGames(ctx, cmd.Interaction().GuildID, userText, utils.MAX_AUTOCOMPLETE_ENTRIES)
+						if err != nil {
+							ctxzap.Error(ctx, fmt.Sprintf("AutocompleteGames: %v", err))
+							break
+						}
 					}
 				}
 			}
