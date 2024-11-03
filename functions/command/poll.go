@@ -144,7 +144,7 @@ out:
 	for el := answers.Front(); el != nil; el = el.Next() {
 		results = append(results, discordgo.PollAnswer{
 			Media: &discordgo.PollMedia{
-				Text: el.Key,
+				Text: truncateActivityName(el.Key),
 			},
 		})
 	}
@@ -157,6 +157,27 @@ out:
 		},
 	})
 	return results, nil
+}
+
+func truncateActivityName(name string) string {
+	if len(name) > 55 {
+		return fmt.Sprintf("%v...", name[:52])
+	}
+	return name
+}
+
+func recoverTruncatedActivity(ctx context.Context, name, guildID string, cl *clients.Clients) (string, error) {
+	if len(name) == 55 && name[52:] == "..." {
+		// Name may be truncated
+		fullName, err := activity.RecoverActivity(ctx, guildID, name[:52], cl)
+		if err != nil {
+			return "", fmt.Errorf("RecoverActivity: %v", err)
+		}
+		return fullName, nil
+	} else {
+		return name, nil
+	}
+
 }
 
 type EndPollCommand struct {
@@ -231,6 +252,11 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 		pollCmd.SkipActivePollCheck(true)
 		return pollCmd.Execute(ctx, cl)
 	} else {
+		// Recover truncated name
+		winner, err = recoverTruncatedActivity(ctx, winner, c.GuildID, cl)
+		if err != nil {
+			return nil, fmt.Errorf("recoverTruncatedActivity: %v", err)
+		}
 		err = g.SetFow(ctx, winner)
 		if err != nil {
 			return nil, fmt.Errorf("SetFow: %v", err)
