@@ -540,6 +540,8 @@ func RecoverActivity(ctx context.Context, guildID, partialName string, cl *clien
 		return act.inner.Name, nil
 	}
 	// Search for partial match
+	// Use search name because I don't want another index
+	lowerName := strings.ToLower(partialName)
 	query := activityCollection.Select("name").WhereEntity(&firestore.PropertyFilter{
 		Path:     "guild_id",
 		Operator: "==",
@@ -547,14 +549,14 @@ func RecoverActivity(ctx context.Context, guildID, partialName string, cl *clien
 	})
 	query = query.WhereEntity(&firestore.AndFilter{
 		Filters: []firestore.EntityFilter{firestore.PropertyFilter{
-			Path:     "name",
+			Path:     "search_name",
 			Operator: ">",
-			Value:    partialName,
+			Value:    lowerName,
 		},
 			firestore.PropertyFilter{
-				Path:     "name",
+				Path:     "search_name",
 				Operator: "<=",
-				Value:    fmt.Sprintf("%v\uf8ff", partialName),
+				Value:    lowerName + "\uf8ff",
 			},
 		},
 	}).OrderBy("search_name", firestore.Asc)
