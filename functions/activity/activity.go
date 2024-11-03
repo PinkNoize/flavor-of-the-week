@@ -540,7 +540,7 @@ func RecoverActivity(ctx context.Context, guildID, partialName string, cl *clien
 		return act.inner.Name, nil
 	}
 	// Search for partial match
-	query := activityCollection.WhereEntity(&firestore.PropertyFilter{
+	query := activityCollection.Select("name").WhereEntity(&firestore.PropertyFilter{
 		Path:     "guild_id",
 		Operator: "==",
 		Value:    guildID,
