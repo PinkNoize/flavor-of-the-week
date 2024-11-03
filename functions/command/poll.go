@@ -152,7 +152,7 @@ out:
 		Media: &discordgo.PollMedia{
 			Text: "Reroll",
 			Emoji: &discordgo.ComponentEmoji{
-				Name: "game_die",
+				Name: "🎲",
 			},
 		},
 	})
