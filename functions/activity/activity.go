@@ -557,7 +557,7 @@ func RecoverActivity(ctx context.Context, guildID, partialName string, cl *clien
 				Value:    fmt.Sprintf("%v\uf8ff", partialName),
 			},
 		},
-	})
+	}).OrderBy("search_name", firestore.Asc)
 	iter := query.Documents(ctx)
 	defer iter.Stop()
 
