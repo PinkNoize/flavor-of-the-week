@@ -21,13 +21,18 @@ import (
 const MAX_POLL_ENTRIES int = 7
 
 type StartPollCommand struct {
-	GuildID string
+	GuildID             string
+	skipActivePollCheck bool
 }
 
 func NewStartPollCommand(guildID string) *StartPollCommand {
 	return &StartPollCommand{
 		GuildID: guildID,
 	}
+}
+
+func (c *StartPollCommand) SkipActivePollCheck(skip bool) {
+	c.skipActivePollCheck = skip
 }
 
 func (c *StartPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookEdit, error) {
@@ -46,7 +51,7 @@ func (c *StartPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*d
 	if err != nil {
 		return nil, fmt.Errorf("GetActivePollID: %v", err)
 	}
-	if pollID != nil {
+	if !c.skipActivePollCheck && pollID != nil {
 		return utils.NewWebhookEdit("There is already an active poll"), nil
 	}
 
@@ -143,6 +148,14 @@ out:
 			},
 		})
 	}
+	results = append(results, discordgo.PollAnswer{
+		Media: &discordgo.PollMedia{
+			Text: "Reroll",
+			Emoji: &discordgo.ComponentEmoji{
+				Name: "game_die",
+			},
+		},
+	})
 	return results, nil
 }
 
@@ -212,6 +225,11 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 	var response *discordgo.WebhookEdit
 	if tie {
 		response = utils.NewWebhookEdit("Ended the poll with a tie")
+	} else if winner == "Reroll" {
+		// Create a new poll
+		pollCmd := NewStartPollCommand(c.GuildID)
+		pollCmd.SkipActivePollCheck(true)
+		return pollCmd.Execute(ctx, cl)
 	} else {
 		err = g.SetFow(ctx, winner)
 		if err != nil {
