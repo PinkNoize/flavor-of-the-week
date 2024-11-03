@@ -12,6 +12,19 @@ import (
 	"github.com/dimuska139/rawg-sdk-go/v3"
 )
 
+func validateName(name string) (bool, string) {
+	// Reserved names
+	switch name {
+	case "reroll", "Reroll":
+		return false, "Reserved name"
+	}
+	// Check length. 55 is the max poll entry
+	if len(name) > 55 {
+		return false, "Name too long"
+	}
+	return true, ""
+}
+
 type AddCommand struct {
 	GuildID      string
 	ActivityType string
@@ -33,6 +46,10 @@ func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discord
 	switch c.ActivityType {
 	case "activity":
 		typ = activity.ACTIVITY
+		valid, reason := validateName(name)
+		if !valid {
+			return utils.NewWebhookEdit(fmt.Sprintf("Invalid activity: %v", reason)), nil
+		}
 	case "game":
 		typ = activity.GAME
 

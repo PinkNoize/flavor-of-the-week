@@ -523,3 +523,67 @@ func GetPoolSize(ctx context.Context, guildID string, cl *clients.Clients) (int6
 	countValue := count.(*firestorepb.Value).GetIntegerValue()
 	return countValue, nil
 }
+
+func RecoverActivity(ctx context.Context, guildID, partialName string, cl *clients.Clients) (string, error) {
+	activityCollection, err := getCollection(cl)
+	if err != nil {
+		return "", fmt.Errorf("getCollection: %v", err)
+	}
+	// Search for exact match
+	act, err := GetActivity(ctx, partialName, guildID, cl)
+	if err != nil {
+		ae, ok := err.(*ActivityError)
+		if ok && ae.Reason != DOES_NOT_EXIST {
+			return "", fmt.Errorf("GetActivity: %v", err)
+		}
+	} else {
+		return act.inner.Name, nil
+	}
+	// Search for partial match
+	// Use search name because I don't want another index
+	lowerName := strings.ToLower(partialName)
+	query := activityCollection.Select("name").WhereEntity(&firestore.PropertyFilter{
+		Path:     "guild_id",
+		Operator: "==",
+		Value:    guildID,
+	})
+	query = query.WhereEntity(&firestore.AndFilter{
+		Filters: []firestore.EntityFilter{firestore.PropertyFilter{
+			Path:     "search_name",
+			Operator: ">",
+			Value:    lowerName,
+		},
+			firestore.PropertyFilter{
+				Path:     "search_name",
+				Operator: "<=",
+				Value:    lowerName + "\uf8ff",
+			},
+		},
+	}).OrderBy("search_name", firestore.Asc)
+	iter := query.Documents(ctx)
+	defer iter.Stop()
+
+	// Get 5 first possiblities
+	results := make([]string, 0, 5)
+	for i := 0; i < 5; i++ {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return "", fmt.Errorf("iter.Next: %v", err)
+		}
+		var inAct innerActivity
+		err = doc.DataTo(&inAct)
+		if err != nil {
+			return "", fmt.Errorf("doc.DataTo: %v", err)
+		}
+		results = append(results, inAct.Name)
+	}
+	if len(results) < 1 {
+		return "", fmt.Errorf("No matching activities found")
+	}
+	// Randomly choose one of the matching activities ¯\_(ツ)_/¯
+	choice := rand.Intn(len(results))
+	return results[choice], nil
+}
