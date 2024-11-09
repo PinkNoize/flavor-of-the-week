@@ -14,7 +14,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func PollPubSub(ctx context.Context, _ PubSubMessage) error {
+func PollPubSub(ctx context.Context, m PubSubMessage) error {
 	var err error
 	logger, slogger := setup.ZapLogger, setup.ZapSlogger
 	defer func() {
@@ -23,7 +23,7 @@ func PollPubSub(ctx context.Context, _ PubSubMessage) error {
 	}()
 	ctx = ctxzap.ToContext(ctx, logger)
 
-	ctxzap.Info(ctx, "Starting poll job")
+	ctxzap.Info(ctx, "Starting poll job", zap.Object("attr", m.Attributes))
 	err = endActivePolls(ctx, setup.ClientLoader)
 	if err != nil {
 		setup.ZapSlogger.Errorf("endActivePolls: %v", err)

@@ -2,7 +2,7 @@
 resource "google_cloud_scheduler_job" "poll-job" {
   name        = "poll-${random_id.id.hex}"
   description = "Trigger poll job"
-  schedule    = "0 0 * * *"
+  schedule    = "2 * * * *"
   pubsub_target {
     topic_name = google_pubsub_topic.poll_topic.id
     data       = base64encode("poll")
