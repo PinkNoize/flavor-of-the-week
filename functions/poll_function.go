@@ -22,8 +22,9 @@ func PollPubSub(ctx context.Context, m PubSubMessage) error {
 		err = errors.Join(logger.Sync())
 	}()
 	ctx = ctxzap.ToContext(ctx, logger)
-
-	ctxzap.Info(ctx, "Starting poll job", zap.Object("attr", m.Attributes))
+	slogger.Infow("Message",
+		"msg", m)
+	ctxzap.Info(ctx, "Starting poll job")
 	err = endActivePolls(ctx, setup.ClientLoader)
 	if err != nil {
 		setup.ZapSlogger.Errorf("endActivePolls: %v", err)
