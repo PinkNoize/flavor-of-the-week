@@ -14,7 +14,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func PollPubSub(ctx context.Context, m PubSubMessage) error {
+func PollPubSub(ctx context.Context, _ PubSubMessage) error {
 	var err error
 	logger, slogger := setup.ZapLogger, setup.ZapSlogger
 	defer func() {
@@ -22,12 +22,15 @@ func PollPubSub(ctx context.Context, m PubSubMessage) error {
 		err = errors.Join(logger.Sync())
 	}()
 	ctx = ctxzap.ToContext(ctx, logger)
-	slogger.Infow("Message",
-		"msg", m)
+
 	ctxzap.Info(ctx, "Starting poll job")
 	err = endActivePolls(ctx, setup.ClientLoader)
 	if err != nil {
-		setup.ZapSlogger.Errorf("endActivePolls: %v", err)
+		slogger.Errorf("endActivePolls: %v", err)
+	}
+	err = startScheduledPolls(ctx, setup.ClientLoader)
+	if err != nil {
+		slogger.Errorf("startScheduledPolls: %v", err)
 	}
 	return nil
 }
@@ -72,6 +75,29 @@ func endActivePolls(ctx context.Context, cl *clients.Clients) error {
 			}
 		} else {
 			ctxzap.Info(ctx, fmt.Sprintf("Poll for %v has not ended", g.GetGuildId()))
+		}
+	}
+	return nil
+}
+
+func startScheduledPolls(ctx context.Context, cl *clients.Clients) error {
+	now := time.Now().UTC()
+	guilds, err := guild.GetGuildsWithSchedule(ctx, now.Weekday(), now.Hour(), cl)
+	if err != nil {
+		return fmt.Errorf("GetGuildsWithSchedule: %v", err)
+	}
+
+	ctxzap.Info(ctx, fmt.Sprintf("Found %v scheduled polls", len(guilds)))
+	prevContext := ctx
+	for _, g := range guilds {
+		ctx = prevContext
+		ctxzap.AddFields(ctx, zap.String("guildID", g.GetGuildId()))
+
+		cmd := command.NewStartPollCommand(g.GetGuildId())
+		_, err = cmd.Execute(ctx, cl)
+		if err != nil {
+			ctxzap.Warn(ctx, fmt.Sprintf("StartPollCommand: %v", err))
+			continue
 		}
 	}
 	return nil
