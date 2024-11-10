@@ -222,7 +222,7 @@ func GetGuildsWithSchedule(ctx context.Context, day time.Weekday, hour int, cl *
 
 	query := guildCollection.WhereEntity(
 		firestore.PropertyFilter{
-			Path:     "schedule.days",
+			Path:     "schedule.day",
 			Operator: "==",
 			Value:    int(day),
 		},
