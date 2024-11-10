@@ -82,7 +82,10 @@ func endActivePolls(ctx context.Context, cl *clients.Clients) error {
 
 func startScheduledPolls(ctx context.Context, cl *clients.Clients) error {
 	now := time.Now().UTC()
-	guilds, err := guild.GetGuildsWithSchedule(ctx, now.Weekday(), now.Hour(), cl)
+	day := now.Weekday()
+	hour := now.Hour()
+	ctxzap.Info(ctx, fmt.Sprintf("Searching for schedules with Day %v, Hour %v", day, hour))
+	guilds, err := guild.GetGuildsWithSchedule(ctx, day, hour, cl)
 	if err != nil {
 		return fmt.Errorf("GetGuildsWithSchedule: %v", err)
 	}
