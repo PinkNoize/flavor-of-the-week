@@ -320,3 +320,44 @@ func (c *SetPollChannelCommand) Execute(ctx context.Context, cl *clients.Clients
 	}
 	return utils.NewWebhookEdit(fmt.Sprintf("Set poll channel to <#%v>", c.ChannelID)), nil
 }
+
+type SchedulePollCommand struct {
+	GuildID string
+	Day     string
+	Hour    int
+}
+
+func NewSchedulePollCommand(guildID, day string, hour int) *SchedulePollCommand {
+	return &SchedulePollCommand{
+		GuildID: guildID,
+		Day:     day,
+		Hour:    hour,
+	}
+}
+
+func (c *SchedulePollCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookEdit, error) {
+	g, err := guild.GetGuild(ctx, c.GuildID, cl)
+	if err != nil {
+		return nil, fmt.Errorf("GetGuild: %v", err)
+	}
+
+	dayLookup := map[string]time.Weekday{
+		"Sunday":    time.Sunday,
+		"Monday":    time.Monday,
+		"Tuesday":   time.Tuesday,
+		"Wednesday": time.Wednesday,
+		"Thursday":  time.Thursday,
+		"Friday":    time.Friday,
+		"Saturday":  time.Saturday,
+	}
+	day := dayLookup[c.Day]
+
+	err = g.SetSchedule(ctx, &guild.ScheduleInfo{
+		Day:  day,
+		Hour: c.Hour,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("SetSchedule: %v", err)
+	}
+	return utils.NewWebhookEdit(fmt.Sprintf("Set schedule for every %v on %v", c.Day, c.Hour)), nil
+}

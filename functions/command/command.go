@@ -192,6 +192,11 @@ func (c *DiscordCommand) fromApplicationCommand() (Command, error) {
 			return nil, fmt.Errorf("missing options: %v", missing)
 		}
 		return NewSetPollChannelCommand(c.interaction.GuildID, args["channel"].ChannelValue(nil)), nil
+	case "schedule-poll":
+		if pass, missing := utils.VerifyOpts(args, []string{"day", "hour"}); !pass {
+			return nil, fmt.Errorf("missing options: %v", missing)
+		}
+		return NewSchedulePollCommand(c.interaction.GuildID, args["day"].StringValue(), args["hour"].IntValue()), nil
 	case "override-fow":
 		if pass, missing := utils.VerifyOpts(args, []string{"name"}); !pass {
 			return nil, fmt.Errorf("missing options: %v", missing)

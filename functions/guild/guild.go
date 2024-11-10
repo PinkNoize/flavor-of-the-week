@@ -18,8 +18,8 @@ type PollInfo struct {
 }
 
 type ScheduleInfo struct {
-	Days []time.Weekday `firestore:"days"`
-	Hour int            `firestore:"hour"`
+	Day  time.Weekday `firestore:"day"`
+	Hour int          `firestore:"hour"`
 }
 
 type innerGuild struct {
