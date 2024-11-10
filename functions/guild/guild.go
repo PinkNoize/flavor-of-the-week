@@ -3,6 +3,7 @@ package guild
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"cloud.google.com/go/firestore"
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
@@ -16,11 +17,17 @@ type PollInfo struct {
 	MessageID string `firestore:"message_id"`
 }
 
+type ScheduleInfo struct {
+	Day  time.Weekday `firestore:"day"`
+	Hour int          `firestore:"hour"`
+}
+
 type innerGuild struct {
-	PollChannelID *string   `firestore:"poll_channel_id"`
-	ActivePoll    *PollInfo `firestore:"active_poll"`
-	Fow           *string   `firestore:"fow"`
-	FowCount      int       `firestore:"fow_count"`
+	PollChannelID *string       `firestore:"poll_channel_id"`
+	ActivePoll    *PollInfo     `firestore:"active_poll"`
+	Fow           *string       `firestore:"fow"`
+	FowCount      int           `firestore:"fow_count"`
+	Schedule      *ScheduleInfo `firestore:"schedule"`
 }
 
 type Guild struct {
@@ -161,6 +168,71 @@ func GetGuildsWithActivePolls(ctx context.Context, cl *clients.Clients) ([]*Guil
 	}
 
 	query := guildCollection.OrderBy("active_poll.channel_id", firestore.Asc)
+	iter := query.Documents(ctx)
+	defer iter.Stop()
+
+	results := make([]*Guild, 0)
+
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("iter.Next: %v", err)
+		}
+		var inGuild innerGuild
+		err = doc.DataTo(&inGuild)
+		if err != nil {
+			return nil, fmt.Errorf("doc.DataTo: %v", err)
+		}
+		results = append(results, &Guild{
+			docRef: doc.Ref,
+			loaded: true,
+			inner:  inGuild,
+		})
+	}
+	return results, nil
+}
+
+func (g *Guild) SetSchedule(ctx context.Context, sch *ScheduleInfo) error {
+	_, err := g.docRef.Set(ctx, map[string]interface{}{
+		"schedule": sch,
+	}, firestore.MergeAll)
+	if err != nil {
+		return err
+	}
+	g.inner.Schedule = sch
+	return nil
+}
+
+func (g *Guild) GetSchedule(ctx context.Context) (*ScheduleInfo, error) {
+	err := g.load(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return g.inner.Schedule, nil
+}
+
+func GetGuildsWithSchedule(ctx context.Context, day time.Weekday, hour int, cl *clients.Clients) ([]*Guild, error) {
+	guildCollection, err := getCollection(cl)
+	if err != nil {
+		return nil, fmt.Errorf("getCollection: %v", err)
+	}
+
+	query := guildCollection.WhereEntity(
+		firestore.PropertyFilter{
+			Path:     "schedule.day",
+			Operator: "==",
+			Value:    int(day),
+		},
+	).WhereEntity(
+		firestore.PropertyFilter{
+			Path:     "schedule.hour",
+			Operator: "==",
+			Value:    hour,
+		},
+	)
 	iter := query.Documents(ctx)
 	defer iter.Stop()
 

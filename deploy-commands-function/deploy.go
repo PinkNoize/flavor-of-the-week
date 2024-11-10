@@ -184,6 +184,59 @@ var commands = []*discordgo.ApplicationCommand{
 		},
 	},
 	{
+		Name:                     "schedule-poll",
+		Description:              "Set the schedule for polls in UTC",
+		Type:                     discordgo.ChatApplicationCommand,
+		DefaultMemberPermissions: Ptr(int64(discordgo.PermissionAdministrator)),
+		DMPermission:             Ptr(false),
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Name:        "day",
+				Description: "Channel to send the polls in",
+				Type:        discordgo.ApplicationCommandOptionString,
+				Required:    true,
+				Choices: []*discordgo.ApplicationCommandOptionChoice{
+					{
+						Name:  "Sunday",
+						Value: "Sunday",
+					},
+					{
+						Name:  "Monday",
+						Value: "Monday",
+					},
+					{
+						Name:  "Tuesday",
+						Value: "Tuesday",
+					},
+					{
+						Name:  "Wednesday",
+						Value: "Wednesday",
+					},
+					{
+						Name:  "Thursday",
+						Value: "Thursday",
+					},
+					{
+						Name:  "Friday",
+						Value: "Friday",
+					},
+					{
+						Name:  "Saturday",
+						Value: "Saturday",
+					},
+				},
+			},
+			{
+				Name:        "hour",
+				Description: "Hour to run the poll (0-23)",
+				Type:        discordgo.ApplicationCommandOptionInteger,
+				Required:    true,
+				MinValue:    Ptr(0.0),
+				MaxValue:    23,
+			},
+		},
+	},
+	{
 		Name:                     "start-poll",
 		Description:              "Start a poll",
 		Type:                     discordgo.ChatApplicationCommand,
