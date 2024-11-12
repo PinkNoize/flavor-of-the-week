@@ -275,11 +275,19 @@ func GetActivitiesPage(ctx context.Context, guildID string, pageNum int, opts *A
 		})
 	}
 	if opts.NominationsOnly {
-		query = query.WhereEntity(firestore.PropertyFilter{
-			Path:     "nominations",
-			Operator: "array-contains",
-			Value:    opts.UserId,
-		})
+		if opts.UserId == "" {
+			query = query.WhereEntity(firestore.PropertyFilter{
+				Path:     "nominations_count",
+				Operator: ">",
+				Value:    0,
+			})
+		} else {
+			query = query.WhereEntity(firestore.PropertyFilter{
+				Path:     "nominations",
+				Operator: "array-contains",
+				Value:    opts.UserId,
+			})
+		}
 	}
 	query = query.WhereEntity(firestore.PropertyFilter{
 		Path:     "guild_id",

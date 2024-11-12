@@ -110,6 +110,20 @@ var commands = []*discordgo.ApplicationCommand{
 			},
 			{
 				Name:        "list",
+				Description: "List all nominations",
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
+				Options: []*discordgo.ApplicationCommandOption{
+					{
+						Name:         "name",
+						Description:  "Name of the game/activity",
+						Type:         discordgo.ApplicationCommandOptionString,
+						Required:     false,
+						Autocomplete: true,
+					},
+				},
+			},
+			{
+				Name:        "mine",
 				Description: "List your nominations",
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
 				Options: []*discordgo.ApplicationCommandOption{
