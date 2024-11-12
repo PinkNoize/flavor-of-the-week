@@ -267,6 +267,11 @@ func GetActivitiesPage(ctx context.Context, guildID string, pageNum int, opts *A
 	}
 	// This query requires an index which is created in terraform
 	query := activityCollection.Select("name", "nominations", "game_info")
+	query = query.WhereEntity(firestore.PropertyFilter{
+		Path:     "guild_id",
+		Operator: "==",
+		Value:    guildID,
+	})
 	if opts.Type != "" {
 		query = query.WhereEntity(firestore.PropertyFilter{
 			Path:     "type",
@@ -288,13 +293,11 @@ func GetActivitiesPage(ctx context.Context, guildID string, pageNum int, opts *A
 				Value:    opts.UserId,
 			})
 		}
+		query = query.OrderBy("nominations_count", firestore.Desc)
+	} else {
+		query = query.OrderBy("search_name", firestore.Asc)
 	}
-	query = query.WhereEntity(firestore.PropertyFilter{
-		Path:     "guild_id",
-		Operator: "==",
-		Value:    guildID,
-	})
-	iter := query.OrderBy("search_name", firestore.Asc).Offset(pageNum * PAGE_SIZE).Documents(ctx)
+	iter := query.Offset(pageNum * PAGE_SIZE).Documents(ctx)
 	defer iter.Stop()
 
 	results := make([]utils.GameEntry, 0, PAGE_SIZE)
