@@ -167,6 +167,16 @@ func (c *DiscordCommand) fromApplicationCommand() (Command, error) {
 			if c.interaction.Member == nil {
 				return nil, fmt.Errorf("Member not found in interaction")
 			}
+			return NewNominationListCommand(c.interaction.GuildID, "", name), nil
+		case "mine":
+			var name string
+			nameOpt, ok := subcmd_args["name"]
+			if ok {
+				name = nameOpt.StringValue()
+			}
+			if c.interaction.Member == nil {
+				return nil, fmt.Errorf("Member not found in interaction")
+			}
 			return NewNominationListCommand(c.interaction.GuildID, c.interaction.Member.User.ID, name), nil
 		default:
 			return nil, fmt.Errorf("not a valid command: %v", subcmd.Name)
