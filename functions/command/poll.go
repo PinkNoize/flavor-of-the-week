@@ -93,27 +93,43 @@ func (c *StartPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*d
 }
 
 func GeneratePollEntries(ctx context.Context, guild *guild.Guild, cl *clients.Clients) ([]discordgo.PollAnswer, error) {
-	answers := orderedmap.NewOrderedMap[string, int]()
+	type answerEntry struct {
+		count int
+		emoji string
+	}
+
+	answers := orderedmap.NewOrderedMap[string, answerEntry]()
 
 	fow, err := guild.GetFow(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("GetFow: %v", err)
 	}
 	if fow != nil {
-		answers.Set(*fow, 1)
+		answers.Set(*fow, answerEntry{
+			count: 1,
+			emoji: "📌",
+		})
 	}
 
 	ctxzap.Info(ctx, "Getting top nominations")
-	// Add top nominations
-	nominations, err := activity.GetTopNominations(ctx, guild.GetGuildId(), MAX_POLL_ENTRIES-answers.Len(), cl)
+	// Add top nominations. Add one in case the current FOW is a top nomination
+	nominations, err := activity.GetTopNominations(ctx, guild.GetGuildId(), MAX_POLL_ENTRIES-answers.Len()+1, cl)
 	if err != nil {
 		return nil, fmt.Errorf("GetTopNominations: %v", err)
 	}
 
 	for _, nom := range nominations {
+		tmp := answers.GetOrDefault(nom, answerEntry{
+			count: 0,
+			emoji: "🏷",
+		})
+		tmp.count += 1
 		answers.Set(nom,
-			answers.GetOrDefault(nom, 0)+1,
+			tmp,
 		)
+		if answers.Len() == MAX_POLL_ENTRIES {
+			break
+		}
 	}
 	// Now pick random entries
 	loop_count := 0
@@ -125,14 +141,19 @@ out:
 			return nil, fmt.Errorf("GetRandomActivities: %v", err)
 		}
 		for _, choice := range randomsChoices {
+			tmp := answers.GetOrDefault(choice, answerEntry{
+				count: 0,
+				emoji: "🎰",
+			})
+			tmp.count += 1
 			answers.Set(choice,
-				answers.GetOrDefault(choice, 0)+1,
+				tmp,
 			)
 		}
 
 		// Check if we are repeating which is indicative of not enough answers in the pool to fill a poll
 		for el := answers.Back(); el != nil; el = el.Prev() {
-			if el.Value > 5 {
+			if el.Value.count > 5 {
 				break out
 			}
 		}
@@ -145,6 +166,9 @@ out:
 		results = append(results, discordgo.PollAnswer{
 			Media: &discordgo.PollMedia{
 				Text: truncateActivityName(el.Key),
+				Emoji: &discordgo.ComponentEmoji{
+					Name: el.Value.emoji,
+				},
 			},
 		})
 	}
