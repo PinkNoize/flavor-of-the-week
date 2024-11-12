@@ -121,7 +121,7 @@ func GeneratePollEntries(ctx context.Context, guild *guild.Guild, cl *clients.Cl
 	for _, nom := range nominations {
 		tmp := answers.GetOrDefault(nom, answerEntry{
 			count: 0,
-			emoji: "🏷",
+			emoji: "🗳️",
 		})
 		tmp.count += 1
 		answers.Set(nom,
