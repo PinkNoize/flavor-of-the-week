@@ -113,13 +113,8 @@ resource "google_firestore_index" "nominations-search-index" {
   }
 
   fields {
-    field_path = "guild_id"
-    order      = "ASCENDING"
-  }
-
-  fields {
-    field_path = "search_name"
-    order      = "ASCENDING"
+    field_path = "nominations_count"
+    order      = "DESCENDING"
   }
 }
 
