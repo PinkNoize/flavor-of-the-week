@@ -245,7 +245,9 @@ func (c *DiscordCommand) fromMessageComponent(ctx context.Context, cl *clients.C
 		switch customID.Type() {
 		case "pool":
 			return NewPoolListCommandFromCustomID(c.interaction.GuildID, customID), nil
-		case "nominations":
+		case "nominations-list":
+			return NewNominationListCommandFromCustomID(c.interaction.GuildID, "", customID), nil
+		case "nominations-mine":
 			return NewNominationListCommandFromCustomID(c.interaction.GuildID, c.interaction.Member.User.ID, customID), nil
 		case "search":
 			return NewSearchCommandFromCustomID(customID), nil

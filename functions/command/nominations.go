@@ -97,7 +97,11 @@ func NewNominationListCommandFromCustomID(guildID, userID string, customID *cust
 
 func (c *NominationListCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookEdit, error) {
 	if c.CustomID == nil {
-		customID, err := customid.CreateCustomID(ctx, "nominations", customid.Filter{
+		typ := "nominations-list"
+		if c.UserID != "" {
+			typ = "nominations-mine"
+		}
+		customID, err := customid.CreateCustomID(ctx, typ, customid.Filter{
 			Name: c.Name,
 		}, 0, cl)
 		if err != nil {
