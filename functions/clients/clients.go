@@ -3,7 +3,6 @@ package clients
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -12,7 +11,6 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/bwmarrin/discordgo"
 	"github.com/josestg/lazy"
-	"google.golang.org/api/googleapi"
 )
 
 type Clients struct {
@@ -50,11 +48,8 @@ func New(ctx context.Context, projectID, discordToken, rawgToken string) *Client
 		rc, err := client.Bucket(os.Getenv("RESOURCES_BUCKET")).Object("banned-users.json").NewReader(ctx)
 		if err != nil {
 			// return empty list if doesn't exist
-			var e *googleapi.Error
-			if ok := errors.As(err, &e); ok {
-				if e.Code == 404 {
-					return nil, nil
-				}
+			if err == storage.ErrObjectNotExist {
+				return nil, nil
 			}
 			return nil, fmt.Errorf("failed to read object: %v", err)
 		}
