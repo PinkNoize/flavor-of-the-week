@@ -65,6 +65,12 @@ resource "google_firestore_index" "pool-search-index" {
   }
 }
 
+resource "google_storage_bucket" "resources" {
+  name                        = "${random_id.id.hex}-${var.env}-resources"
+  location                    = var.region
+  uniform_bucket_level_access = true
+}
+
 resource "google_firestore_index" "pool-type-search-index" {
   project    = var.project
   database   = "(default)"
@@ -131,6 +137,26 @@ resource "google_firestore_index" "nominations-index" {
   fields {
     field_path = "nominations_count"
     order      = "DESCENDING"
+  }
+}
+
+
+resource "google_firestore_index" "nominations-index-random" {
+  project    = var.project
+  database   = "(default)"
+  collection = "flavor-of-the-week-${var.env}"
+
+  fields {
+    field_path = "guild_id"
+    order      = "ASCENDING"
+  }
+  fields {
+    field_path = "nominations_count"
+    order      = "DESCENDING"
+  }
+  fields {
+    field_path = "random.num_1"
+    order      = "ASCENDING"
   }
 }
 

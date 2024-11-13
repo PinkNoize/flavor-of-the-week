@@ -22,10 +22,11 @@ resource "google_cloudfunctions2_function" "discord_endpoint" {
     timeout_seconds    = 10
 
     environment_variables = {
-      PROJECT_ID     = var.project,
-      COMMAND_TOPIC  = google_pubsub_topic.command_topic.name,
-      DISCORD_PUBKEY = var.discord_public_key,
-      ENV            = var.env,
+      PROJECT_ID       = var.project,
+      COMMAND_TOPIC    = google_pubsub_topic.command_topic.name,
+      DISCORD_PUBKEY   = var.discord_public_key,
+      ENV              = var.env,
+      RESOURCES_BUCKET = google_storage_bucket.resources.id,
     }
     secret_environment_variables {
       key        = "RAWG_TOKEN"
