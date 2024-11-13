@@ -68,6 +68,7 @@ func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
 	}
 	if _, ok := bannedUsers[userId]; ok {
+		ctxzap.Info(ctx, fmt.Sprintf("User %v is banned. Blocking", userId))
 		err = writeBannedResponse(w)
 		if err != nil {
 			slogger.Errorf("Error writing response: %v", err)
