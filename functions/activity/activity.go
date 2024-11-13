@@ -394,7 +394,7 @@ func GetTopNominations(ctx context.Context, guildID string, n int, cl *clients.C
 		Path:     "guild_id",
 		Operator: "==",
 		Value:    guildID,
-	}).OrderBy("nominations_count", firestore.Desc).Limit(n)
+	}).OrderBy("nominations_count", firestore.Desc).OrderBy("random.num_1", firestore.Asc).Limit(n)
 	iter := query.Documents(ctx)
 	defer iter.Stop()
 
