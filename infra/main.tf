@@ -219,6 +219,12 @@ resource "google_project_iam_member" "firestore-iam" {
   member  = "serviceAccount:${google_service_account.cloud_func_service_account.email}"
 }
 
+resource "google_storage_bucket_access_control" "resources" {
+  bucket = google_storage_bucket.resources.name
+  role   = "READER"
+  entity = "user-${google_service_account.cloud_func_service_account.email}"
+}
+
 # Add pub/sub publisher
 resource "google_pubsub_topic_iam_member" "cloud_func_member" {
   project = google_pubsub_topic.command_topic.project
