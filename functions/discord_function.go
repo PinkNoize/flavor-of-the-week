@@ -61,6 +61,22 @@ func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 	// Add command context to ctx
 	ctx = cmd.ToContext(ctx)
 
+	userId := cmd.UserID()
+	bannedUsers, err := setup.ClientLoader.BannedUsers()
+	if err != nil {
+		slogger.Errorf("Error writing response: %v", err)
+		http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
+	}
+	if _, ok := bannedUsers[userId]; ok {
+		ctxzap.Info(ctx, fmt.Sprintf("User %v is banned. Blocking", userId))
+		err = writeBannedResponse(w)
+		if err != nil {
+			slogger.Errorf("Error writing response: %v", err)
+			http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
+		}
+		return
+	}
+
 	switch cmd.Type() {
 	case discordgo.InteractionPing:
 		handlePing(ctx, w)
@@ -176,6 +192,24 @@ func writeMaintenanceResponse(w http.ResponseWriter) error {
 	err := json.NewEncoder(w).Encode(response)
 	if err != nil {
 		return fmt.Errorf("writeMaintenanceResponse: jsonEncoder: %v", err)
+	}
+	return nil
+}
+
+func writeBannedResponse(w http.ResponseWriter) error {
+	response := discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: "You have been banned",
+			Flags:   discordgo.MessageFlagsEphemeral,
+		},
+	}
+
+	// MUST SET HEADER BEFORE CONTENT
+	w.Header().Set("Content-Type", "application/json")
+	err := json.NewEncoder(w).Encode(response)
+	if err != nil {
+		return fmt.Errorf("writeBannedResponse: jsonEncoder: %v", err)
 	}
 	return nil
 }

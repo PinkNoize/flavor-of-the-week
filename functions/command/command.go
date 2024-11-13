@@ -103,11 +103,21 @@ func (c *DiscordCommand) UserNick() string {
 	if c.interaction.Member != nil {
 		name := c.interaction.Member.Nick
 		if name == "" {
-			name = fmt.Sprintf("%v%v", c.interaction.Member.User.ID, c.interaction.Member.User.Discriminator)
+			if c.interaction.Member.User != nil && c.interaction.Member.User.Username != "" {
+				name = c.interaction.Member.User.Username
+			} else {
+				name = fmt.Sprintf("%v%v", c.interaction.Member.User.ID, c.interaction.Member.User.Discriminator)
+			}
 		}
 		return name
 	} else if c.interaction.User != nil {
-		return fmt.Sprintf("%v%v", c.interaction.User.ID, c.interaction.User.Discriminator)
+		if c.interaction.User.Username != "" {
+			return c.interaction.User.Username
+		} else if c.interaction.User.GlobalName != "" {
+			return c.interaction.User.GlobalName
+		} else {
+			return fmt.Sprintf("%v%v", c.interaction.User.ID, c.interaction.User.Discriminator)
+		}
 	} else {
 		return ""
 	}
