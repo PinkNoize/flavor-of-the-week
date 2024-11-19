@@ -13,8 +13,9 @@ import (
 )
 
 type PollInfo struct {
-	ChannelID string `firestore:"channel_id"`
-	MessageID string `firestore:"message_id"`
+	ChannelID   string `firestore:"channel_id"`
+	MessageID   string `firestore:"message_id"`
+	SuddenDeath bool   `firestore:"sudden_death"`
 }
 
 type ScheduleInfo struct {

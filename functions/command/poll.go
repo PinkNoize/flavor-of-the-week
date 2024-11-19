@@ -8,6 +8,8 @@ import (
 	"slices"
 	"time"
 
+	"math/rand"
+
 	"github.com/PinkNoize/flavor-of-the-week/functions/activity"
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
 	"github.com/PinkNoize/flavor-of-the-week/functions/guild"
@@ -20,22 +22,32 @@ import (
 
 const MAX_POLL_ENTRIES int = 7
 
-type StartPollCommand struct {
+type CreatePollCommand struct {
 	GuildID             string
+	Options             []discordgo.PollAnswer
+	Duration            int
+	SuddenDeath         bool
 	skipActivePollCheck bool
 }
 
-func NewStartPollCommand(guildID string) *StartPollCommand {
-	return &StartPollCommand{
-		GuildID: guildID,
+func NewCreatePollCommand(guildID string, options []discordgo.PollAnswer, duration int, suddenDeath bool) *CreatePollCommand {
+	return &CreatePollCommand{
+		GuildID:     guildID,
+		Options:     options,
+		Duration:    duration,
+		SuddenDeath: suddenDeath,
 	}
 }
 
-func (c *StartPollCommand) SkipActivePollCheck(skip bool) {
+func (c *CreatePollCommand) SkipActivePollCheck(skip bool) {
 	c.skipActivePollCheck = skip
 }
 
-func (c *StartPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookEdit, error) {
+func (c *CreatePollCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookEdit, error) {
+	s, err := cl.Discord()
+	if err != nil {
+		return nil, fmt.Errorf("Discord: %v", err)
+	}
 	g, err := guild.GetGuild(ctx, c.GuildID, cl)
 	if err != nil {
 		return nil, fmt.Errorf("GetGuild: %v", err)
@@ -54,42 +66,69 @@ func (c *StartPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*d
 	if !c.skipActivePollCheck && pollID != nil {
 		return utils.NewWebhookEdit("There is already an active poll"), nil
 	}
-
-	s, err := cl.Discord()
-	if err != nil {
-		return nil, fmt.Errorf("Discord: %v", err)
+	if c.Options == nil {
+		c.Options, err = GeneratePollEntries(ctx, g, cl)
+		if err != nil {
+			return nil, fmt.Errorf("GeneratePollEntries: %v", err)
+		}
 	}
 
-	// Generate poll entries
-	entries, err := GeneratePollEntries(ctx, g, cl)
-	if err != nil {
-		return nil, fmt.Errorf("GeneratePollEntries: %v", err)
+	text := "What should the flavor of the week be?"
+	if c.SuddenDeath {
+		text = "Sudden Death Tie Breaker"
 	}
-	// TODO: Rotate random numbers on poll entries? This may be overkill
 
 	msg, err := s.ChannelMessageSendComplex(*chanID, &discordgo.MessageSend{
 		Poll: &discordgo.Poll{
 			Question: discordgo.PollMedia{
-				Text: "What should the flavor of the week be?",
+				Text: text,
 			},
-			Answers:          entries,
+			Answers:          c.Options,
 			AllowMultiselect: true,
 			LayoutType:       discordgo.PollLayoutTypeDefault,
-			Duration:         48,
+			Duration:         c.Duration,
 		},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("ChannelMessageSendComplex: %v", err)
 	}
 	err = g.SetActivePoll(ctx, &guild.PollInfo{
-		ChannelID: *chanID,
-		MessageID: msg.ID,
+		ChannelID:   *chanID,
+		MessageID:   msg.ID,
+		SuddenDeath: c.SuddenDeath,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("SetActivePoll: %v", err)
 	}
 	msgLink := fmt.Sprintf("https://discord.com/channels/%v/%v/%v", c.GuildID, *chanID, msg.ID)
 	return utils.NewWebhookEdit(fmt.Sprintf("Poll created: %v", msgLink)), nil
+}
+
+type StartPollCommand struct {
+	GuildID             string
+	skipActivePollCheck bool
+}
+
+func NewStartPollCommand(guildID string) *StartPollCommand {
+	return &StartPollCommand{
+		GuildID: guildID,
+	}
+}
+
+func (c *StartPollCommand) SkipActivePollCheck(skip bool) {
+	c.skipActivePollCheck = skip
+}
+
+func (c *StartPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookEdit, error) {
+	pollCmd := NewCreatePollCommand(
+		c.GuildID,
+		nil,
+		48,
+		false,
+	)
+	pollCmd.SkipActivePollCheck(c.skipActivePollCheck)
+	return pollCmd.Execute(ctx, cl)
+
 }
 
 func GeneratePollEntries(ctx context.Context, guild *guild.Guild, cl *clients.Clients) ([]discordgo.PollAnswer, error) {
@@ -230,9 +269,11 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 	if err != nil {
 		return nil, fmt.Errorf("Discord: %v", err)
 	}
+	// Get the poll status
 	msg, err := s.ChannelMessage(pollID.ChannelID, pollID.MessageID)
 	if err != nil {
 		if restErr, ok := err.(*discordgo.RESTError); ok && restErr.Response.StatusCode == http.StatusNotFound {
+			// If the poll has been deleted, reset the poll status
 			err := g.ClearActivePoll(ctx)
 			if err != nil {
 				return nil, fmt.Errorf("ClearActivePoll: %v", err)
@@ -266,26 +307,59 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 			return utils.NewWebhookEdit("Failed to get the poll results"), nil
 		}
 	}
-	winner, tie := determinePollWinner(msg.Poll)
+	// Poll has ended, get the results
+	winners, tie := determinePollWinners(msg.Poll)
 	var response *discordgo.WebhookEdit
 	if tie {
-		response = utils.NewWebhookEdit("Ended the poll with a tie")
-	} else if winner == "Reroll" {
+		if pollID.SuddenDeath {
+			// If it is a sudden death poll, choose at random
+			winner := winners[rand.Intn(len(winners))]
+			// Post winner and cleanup
+			_, err = s.ChannelMessageSendComplex(pollID.ChannelID, &discordgo.MessageSend{
+				Embeds: []*discordgo.MessageEmbed{
+					{
+						Title:       "⚡Sudden Death Winner⚡",
+						Description: fmt.Sprintf("This winner is %v", winner),
+					},
+				},
+			})
+			if err != nil {
+				return nil, fmt.Errorf("ChannelMessageSendComplex: %v", err)
+			}
+			err = declareWinner(ctx, winner, c.GuildID, g, cl)
+			if err != nil {
+				return nil, fmt.Errorf("declareWinner: %v", err)
+			}
+			response = utils.NewWebhookEdit(fmt.Sprintf("Poll ended\nWinner: %v", winner))
+
+		} else {
+			// Start a sudden death poll
+			pollWinners := make([]discordgo.PollAnswer, 0)
+			for _, ans := range winners {
+				pollWinners = append(pollWinners, discordgo.PollAnswer{
+					Media: &discordgo.PollMedia{
+						Text: ans,
+						Emoji: &discordgo.ComponentEmoji{
+							Name: "⚡",
+						},
+					},
+				})
+			}
+			pollCmd := NewCreatePollCommand(c.GuildID, pollWinners, 2, true)
+			pollCmd.SkipActivePollCheck(true)
+			return pollCmd.Execute(ctx, cl)
+		}
+	} else if winners[0] == "Reroll" {
 		// Create a new poll
 		pollCmd := NewStartPollCommand(c.GuildID)
 		pollCmd.SkipActivePollCheck(true)
 		return pollCmd.Execute(ctx, cl)
 	} else {
-		// Recover truncated name
-		winner, err = recoverTruncatedActivity(ctx, winner, c.GuildID, cl)
+		err = declareWinner(ctx, winners[0], c.GuildID, g, cl)
 		if err != nil {
-			return nil, fmt.Errorf("recoverTruncatedActivity: %v", err)
+			return nil, fmt.Errorf("declareWinner: %v", err)
 		}
-		err = g.SetFow(ctx, winner)
-		if err != nil {
-			return nil, fmt.Errorf("SetFow: %v", err)
-		}
-		response = utils.NewWebhookEdit(fmt.Sprintf("Poll ended\nWinner: %v", winner))
+		response = utils.NewWebhookEdit(fmt.Sprintf("Poll ended\nWinner: %v", winners[0]))
 	}
 	err = g.ClearActivePoll(ctx)
 	if err != nil {
@@ -298,8 +372,28 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 	return response, nil
 }
 
-func determinePollWinner(poll *discordgo.Poll) (string, bool) {
+func declareWinner(ctx context.Context, winner, guildID string, g *guild.Guild, cl *clients.Clients) error {
+	// Recover truncated name
+	winner, err := recoverTruncatedActivity(ctx, winner, guildID, cl)
+	if err != nil {
+		return fmt.Errorf("recoverTruncatedActivity: %v", err)
+	}
+	err = g.SetFow(ctx, winner)
+	if err != nil {
+		return fmt.Errorf("SetFow: %v", err)
+	}
+	return nil
+
+}
+
+func determinePollWinners(poll *discordgo.Poll) ([]string, bool) {
 	answerCounts := poll.Results.AnswerCounts
+	// There are no votes
+	if len(answerCounts) == 0 {
+		return nil, true
+	}
+
+	// sort results
 	slices.SortFunc(answerCounts, func(a, b *discordgo.PollAnswerCount) int {
 		if a == nil && b != nil {
 			return 1
@@ -310,15 +404,20 @@ func determinePollWinner(poll *discordgo.Poll) (string, bool) {
 		}
 		return -cmp.Compare(a.Count, b.Count)
 	})
-	if len(answerCounts) == 0 {
-		return "", true
-	} else if len(answerCounts) != 1 && answerCounts[0].Count == answerCounts[1].Count {
-		return "", true
+	maxVote := answerCounts[0].Count
+
+	winners := make([]string, 0)
+	for _, ans := range answerCounts {
+		if ans.Count == maxVote {
+			i := slices.IndexFunc(poll.Answers, func(a discordgo.PollAnswer) bool {
+				return a.AnswerID == ans.ID
+			})
+			winners = append(winners, poll.Answers[i].Media.Text)
+		} else {
+			break
+		}
 	}
-	i := slices.IndexFunc(poll.Answers, func(a discordgo.PollAnswer) bool {
-		return a.AnswerID == answerCounts[0].ID
-	})
-	return poll.Answers[i].Media.Text, false
+	return winners, len(winners) > 1
 }
 
 type SetPollChannelCommand struct {
