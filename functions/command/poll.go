@@ -324,7 +324,7 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 				},
 			})
 			if err != nil {
-				return nil, fmt.Errof("ChannelMessageSendComplex: %v", err)
+				return nil, fmt.Errorf("ChannelMessageSendComplex: %v", err)
 			}
 			err = declareWinner(ctx, winner, c.GuildID, g, cl)
 			if err != nil {
