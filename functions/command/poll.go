@@ -315,14 +315,17 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 			// If it is a sudden death poll, choose at random
 			winner := winners[rand.Intn(len(winners))]
 			// Post winner and cleanup
-			s.ChannelMessageSendComplex(pollID.ChannelID, &discordgo.MessageSend{
+			_, err = s.ChannelMessageSendComplex(pollID.ChannelID, &discordgo.MessageSend{
 				Embeds: []*discordgo.MessageEmbed{
 					{
 						Title:       "⚡Sudden Death Winner⚡",
-						Description: fmt.Sprintf("This winner is {}", winner),
+						Description: fmt.Sprintf("This winner is %v", winner),
 					},
 				},
 			})
+			if err != nil {
+				return nil, fmt.Errof("ChannelMessageSendComplex: %v", err)
+			}
 			err = declareWinner(ctx, winner, c.GuildID, g, cl)
 			if err != nil {
 				return nil, fmt.Errorf("declareWinner: %v", err)
@@ -346,7 +349,6 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 			pollCmd.SkipActivePollCheck(true)
 			return pollCmd.Execute(ctx, cl)
 		}
-		response = utils.NewWebhookEdit("Ended the poll with a tie")
 	} else if winners[0] == "Reroll" {
 		// Create a new poll
 		pollCmd := NewStartPollCommand(c.GuildID)
