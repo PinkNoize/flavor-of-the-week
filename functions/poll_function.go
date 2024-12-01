@@ -27,10 +27,6 @@ func PollPubSub(ctx context.Context, _ PubSubMessage) error {
 	now := time.Now().UTC()
 
 	ctxzap.Info(ctx, "Starting poll job")
-	err = endActivePolls(ctx, setup.ClientLoader)
-	if err != nil {
-		slogger.Errorf("endActivePolls: %v", err)
-	}
 	err = startScheduledPolls(ctx, now, setup.ClientLoader)
 	if err != nil {
 		slogger.Errorf("startScheduledPolls: %v", err)
@@ -38,6 +34,10 @@ func PollPubSub(ctx context.Context, _ PubSubMessage) error {
 	err = notifyUpcomingPolls(ctx, now, setup.ClientLoader)
 	if err != nil {
 		slogger.Errorf("notifyUpcomingPolls: %v", err)
+	}
+	err = endActivePolls(ctx, setup.ClientLoader)
+	if err != nil {
+		slogger.Errorf("endActivePolls: %v", err)
 	}
 	return nil
 }
@@ -54,6 +54,10 @@ func endActivePolls(ctx context.Context, cl *clients.Clients) error {
 	}
 	ctxzap.Info(ctx, fmt.Sprintf("Found %v active polls", len(guilds)))
 	prevContext := ctx
+	if len(guilds) > 0 {
+		time.Sleep(time.Minute)
+	}
+
 	for _, g := range guilds {
 		ctx = prevContext
 		ctxzap.AddFields(ctx, zap.String("guildID", g.GetGuildId()))
