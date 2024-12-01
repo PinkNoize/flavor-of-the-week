@@ -35,7 +35,6 @@ func PollPubSub(ctx context.Context, _ PubSubMessage) error {
 	if err != nil {
 		slogger.Errorf("notifyUpcomingPolls: %v", err)
 	}
-	time.Sleep(time.Minute)
 	err = endActivePolls(ctx, setup.ClientLoader)
 	if err != nil {
 		slogger.Errorf("endActivePolls: %v", err)
@@ -55,6 +54,10 @@ func endActivePolls(ctx context.Context, cl *clients.Clients) error {
 	}
 	ctxzap.Info(ctx, fmt.Sprintf("Found %v active polls", len(guilds)))
 	prevContext := ctx
+	if len(guilds) > 0 {
+		time.Sleep(time.Minute)
+	}
+
 	for _, g := range guilds {
 		ctx = prevContext
 		ctxzap.AddFields(ctx, zap.String("guildID", g.GetGuildId()))
