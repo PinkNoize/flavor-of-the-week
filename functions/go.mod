@@ -1,6 +1,6 @@
 module github.com/PinkNoize/flavor-of-the-week/functions
 
-go 1.24.1
+go 1.23.7
 
 require (
 	cloud.google.com/go/storage v1.51.0

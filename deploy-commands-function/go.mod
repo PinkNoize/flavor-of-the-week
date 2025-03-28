@@ -1,6 +1,6 @@
 module github.com/PinkNoize/flavor-of-the-week/deploy-commands-function
 
-go 1.24.1
+go 1.23.7
 
 require github.com/gorilla/websocket v1.5.3 // indirect
 
