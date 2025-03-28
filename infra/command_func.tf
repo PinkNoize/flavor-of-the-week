@@ -10,7 +10,7 @@ resource "google_cloudfunctions2_function" "command" {
   description = "Command Function"
 
   build_config {
-    runtime     = "go122"
+    runtime     = "go124"
     entry_point = "CommandPubSub"
     source {
       storage_source {

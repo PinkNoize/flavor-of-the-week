@@ -30,11 +30,11 @@ func (c *StatsCommand) Execute(ctx context.Context, cl *clients.Clients) (*disco
 	}
 	discordSession, err := cl.Discord()
 	if err != nil {
-		return nil, fmt.Errorf("Discord: %v", err)
+		return nil, fmt.Errorf("discord: %v", err)
 	}
 	guildInfo, err := discordSession.Guild(c.GuildID)
 	if err != nil {
-		return nil, fmt.Errorf("Guild: %v", err)
+		return nil, fmt.Errorf("guild: %v", err)
 	}
 	fow, err := g.GetFow(ctx)
 	if err != nil {

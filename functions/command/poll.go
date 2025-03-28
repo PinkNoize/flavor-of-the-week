@@ -46,22 +46,22 @@ func (c *CreatePollCommand) SkipActivePollCheck(skip bool) {
 func (c *CreatePollCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookEdit, error) {
 	s, err := cl.Discord()
 	if err != nil {
-		return nil, fmt.Errorf("Discord: %v", err)
+		return nil, fmt.Errorf("discord: %v", err)
 	}
 	g, err := guild.GetGuild(ctx, c.GuildID, cl)
 	if err != nil {
-		return nil, fmt.Errorf("GetGuild: %v", err)
+		return nil, fmt.Errorf("getGuild: %v", err)
 	}
 	chanID, err := g.GetPollChannel(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("GetPollChannel: %v", err)
+		return nil, fmt.Errorf("getPollChannel: %v", err)
 	}
 	if chanID == nil {
 		return utils.NewWebhookEdit("The poll channel has not been set"), nil
 	}
 	pollID, err := g.GetActivePoll(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("GetActivePollID: %v", err)
+		return nil, fmt.Errorf("getActivePollID: %v", err)
 	}
 	if !c.skipActivePollCheck && pollID != nil {
 		return utils.NewWebhookEdit("There is already an active poll"), nil
@@ -69,7 +69,7 @@ func (c *CreatePollCommand) Execute(ctx context.Context, cl *clients.Clients) (*
 	if c.Options == nil {
 		c.Options, err = GeneratePollEntries(ctx, g, cl)
 		if err != nil {
-			return nil, fmt.Errorf("GeneratePollEntries: %v", err)
+			return nil, fmt.Errorf("generatePollEntries: %v", err)
 		}
 	}
 
@@ -90,7 +90,7 @@ func (c *CreatePollCommand) Execute(ctx context.Context, cl *clients.Clients) (*
 		},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("ChannelMessageSendComplex: %v", err)
+		return nil, fmt.Errorf("channelMessageSendComplex: %v", err)
 	}
 	err = g.SetActivePoll(ctx, &guild.PollInfo{
 		ChannelID:   *chanID,
@@ -98,7 +98,7 @@ func (c *CreatePollCommand) Execute(ctx context.Context, cl *clients.Clients) (*
 		SuddenDeath: c.SuddenDeath,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("SetActivePoll: %v", err)
+		return nil, fmt.Errorf("setActivePoll: %v", err)
 	}
 	msgLink := fmt.Sprintf("https://discord.com/channels/%v/%v/%v", c.GuildID, *chanID, msg.ID)
 	return utils.NewWebhookEdit(fmt.Sprintf("Poll created: %v", msgLink)), nil
@@ -141,7 +141,7 @@ func GeneratePollEntries(ctx context.Context, guild *guild.Guild, cl *clients.Cl
 
 	fow, err := guild.GetFow(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("GetFow: %v", err)
+		return nil, fmt.Errorf("getFow: %v", err)
 	}
 	if fow != nil {
 		answers.Set(*fow, answerEntry{
@@ -154,7 +154,7 @@ func GeneratePollEntries(ctx context.Context, guild *guild.Guild, cl *clients.Cl
 	// Add top nominations. Add one in case the current FOW is a top nomination
 	nominations, err := activity.GetTopNominations(ctx, guild.GetGuildId(), MAX_POLL_ENTRIES-answers.Len()+1, cl)
 	if err != nil {
-		return nil, fmt.Errorf("GetTopNominations: %v", err)
+		return nil, fmt.Errorf("getTopNominations: %v", err)
 	}
 
 	for _, nom := range nominations {
@@ -177,7 +177,7 @@ out:
 		ctxzap.Info(ctx, fmt.Sprintf("Getting random activities nominations. Try %v", loop_count))
 		randomsChoices, err := activity.GetRandomActivities(ctx, guild.GetGuildId(), MAX_POLL_ENTRIES-answers.Len(), cl)
 		if err != nil {
-			return nil, fmt.Errorf("GetRandomActivities: %v", err)
+			return nil, fmt.Errorf("getRandomActivities: %v", err)
 		}
 		for _, choice := range randomsChoices {
 			tmp := answers.GetOrDefault(choice, answerEntry{
@@ -234,7 +234,7 @@ func recoverTruncatedActivity(ctx context.Context, name, guildID string, cl *cli
 		// Name may be truncated
 		fullName, err := activity.RecoverActivity(ctx, guildID, name[:52], cl)
 		if err != nil {
-			return "", fmt.Errorf("RecoverActivity: %v", err)
+			return "", fmt.Errorf("recoverActivity: %v", err)
 		}
 		return fullName, nil
 	} else {
@@ -256,18 +256,18 @@ func NewEndPollCommand(guildID string) *EndPollCommand {
 func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookEdit, error) {
 	g, err := guild.GetGuild(ctx, c.GuildID, cl)
 	if err != nil {
-		return nil, fmt.Errorf("GetGuild: %v", err)
+		return nil, fmt.Errorf("getGuild: %v", err)
 	}
 	pollID, err := g.GetActivePoll(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("GetActivePollID: %v", err)
+		return nil, fmt.Errorf("getActivePollID: %v", err)
 	}
 	if pollID == nil {
 		return utils.NewWebhookEdit("There is no active poll to end"), nil
 	}
 	s, err := cl.Discord()
 	if err != nil {
-		return nil, fmt.Errorf("Discord: %v", err)
+		return nil, fmt.Errorf("discord: %v", err)
 	}
 	// Get the poll status
 	msg, err := s.ChannelMessage(pollID.ChannelID, pollID.MessageID)
@@ -276,26 +276,26 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 			// If the poll has been deleted, reset the poll status
 			err := g.ClearActivePoll(ctx)
 			if err != nil {
-				return nil, fmt.Errorf("ClearActivePoll: %v", err)
+				return nil, fmt.Errorf("clearActivePoll: %v", err)
 			}
 		}
-		return utils.NewWebhookEdit("⚠️ Unable to retrieve the poll"), fmt.Errorf("ChannelMessage: %v", err)
+		return utils.NewWebhookEdit("⚠️ Unable to retrieve the poll"), fmt.Errorf("channelMessage: %v", err)
 	}
 	if msg.Poll == nil {
-		return utils.NewWebhookEdit("⚠️ No poll associated with the message"), fmt.Errorf("Missing poll")
+		return utils.NewWebhookEdit("⚠️ No poll associated with the message"), fmt.Errorf("missing poll")
 	}
 	if msg.Poll.Results == nil || !msg.Poll.Results.Finalized || msg.Poll.Results.AnswerCounts == nil {
 		msg, err = s.PollExpire(pollID.ChannelID, pollID.MessageID)
 		if err != nil {
-			return utils.NewWebhookEdit("⚠️ Unable to end the poll"), fmt.Errorf("PollExpire: %v", err)
+			return utils.NewWebhookEdit("⚠️ Unable to end the poll"), fmt.Errorf("pollExpire: %v", err)
 		}
 		waitForResults := func() error {
 			msg, err = s.ChannelMessage(pollID.ChannelID, pollID.MessageID)
 			if err != nil || msg.Poll == nil {
-				return fmt.Errorf("ChannelMessage: %v", err)
+				return fmt.Errorf("channelMessage: %v", err)
 			}
 			if msg.Poll.Results == nil || !msg.Poll.Results.Finalized || msg.Poll.Results.AnswerCounts == nil {
-				return fmt.Errorf("Poll not finalized")
+				return fmt.Errorf("poll not finalized")
 			}
 			return nil
 		}
@@ -324,7 +324,7 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 				},
 			})
 			if err != nil {
-				return nil, fmt.Errorf("ChannelMessageSendComplex: %v", err)
+				return nil, fmt.Errorf("channelMessageSendComplex: %v", err)
 			}
 			err = declareWinner(ctx, winner, c.GuildID, g, cl)
 			if err != nil {
@@ -363,11 +363,11 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 	}
 	err = g.ClearActivePoll(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("ClearActivePoll: %v", err)
+		return nil, fmt.Errorf("clearActivePoll: %v", err)
 	}
 	err = activity.ClearNominations(ctx, c.GuildID, cl)
 	if err != nil {
-		return nil, fmt.Errorf("ClearNominations: %v", err)
+		return nil, fmt.Errorf("clearNominations: %v", err)
 	}
 	return response, nil
 }
@@ -435,11 +435,11 @@ func NewSetPollChannelCommand(guildID string, channel *discordgo.Channel) *SetPo
 func (c *SetPollChannelCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookEdit, error) {
 	g, err := guild.GetGuild(ctx, c.GuildID, cl)
 	if err != nil {
-		return nil, fmt.Errorf("GetGuild: %v", err)
+		return nil, fmt.Errorf("getGuild: %v", err)
 	}
 	err = g.SetPollChannel(ctx, c.ChannelID)
 	if err != nil {
-		return nil, fmt.Errorf("SetPollChannel: %v", err)
+		return nil, fmt.Errorf("setPollChannel: %v", err)
 	}
 	return utils.NewWebhookEdit(fmt.Sprintf("Set poll channel to <#%v>", c.ChannelID)), nil
 }
@@ -461,7 +461,7 @@ func NewSchedulePollCommand(guildID, day string, hour int) *SchedulePollCommand 
 func (c *SchedulePollCommand) Execute(ctx context.Context, cl *clients.Clients) (*discordgo.WebhookEdit, error) {
 	g, err := guild.GetGuild(ctx, c.GuildID, cl)
 	if err != nil {
-		return nil, fmt.Errorf("GetGuild: %v", err)
+		return nil, fmt.Errorf("getGuild: %v", err)
 	}
 
 	dayLookup := map[string]time.Weekday{
@@ -480,7 +480,7 @@ func (c *SchedulePollCommand) Execute(ctx context.Context, cl *clients.Clients) 
 		Hour: c.Hour,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("SetSchedule: %v", err)
+		return nil, fmt.Errorf("setSchedule: %v", err)
 	}
 	return utils.NewWebhookEdit(fmt.Sprintf("Set schedule for every %v on %v", c.Day, c.Hour)), nil
 }

@@ -72,7 +72,7 @@ func (c *AddCommand) Execute(ctx context.Context, cl *clients.Clients) (*discord
 			BackgroundImage: detail.ImageBackground,
 		}
 	default:
-		return nil, fmt.Errorf("Activity type not supported: %v", c.ActivityType)
+		return nil, fmt.Errorf("activity type not supported: %v", c.ActivityType)
 	}
 	_, err := activity.Create(ctx, typ, name, c.GuildID, info, cl)
 	if err != nil {

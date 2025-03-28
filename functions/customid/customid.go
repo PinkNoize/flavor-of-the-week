@@ -76,7 +76,7 @@ func GetCustomID(ctx context.Context, discordCustomID string, cl *clients.Client
 	var oCustomID outCustomID
 	err := json.Unmarshal([]byte(discordCustomID), &oCustomID)
 	if err != nil {
-		return nil, fmt.Errorf("Unmarshal: %v", err)
+		return nil, fmt.Errorf("unmarshal: %v", err)
 	}
 	if oCustomID.ID == nil {
 		return &CustomID{
@@ -93,7 +93,7 @@ func GetCustomID(ctx context.Context, discordCustomID string, cl *clients.Client
 	stateDoc := stateCollection.Doc(*oCustomID.ID)
 	docSnap, err := stateDoc.Get(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("Get: %v", err)
+		return nil, fmt.Errorf("get: %v", err)
 	}
 	id := CustomID{
 		docName: *oCustomID.ID,
@@ -102,7 +102,7 @@ func GetCustomID(ctx context.Context, discordCustomID string, cl *clients.Client
 	}
 	err = docSnap.DataTo(&id.innerCustomID)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to deserialize customID: %v", err)
+		return nil, fmt.Errorf("failed to deserialize customID: %v", err)
 	}
 
 	return &id, nil
