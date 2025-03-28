@@ -53,9 +53,9 @@ func New(ctx context.Context, projectID, discordToken, rawgToken string) *Client
 			}
 			return nil, fmt.Errorf("failed to read object: %v", err)
 		}
-		defer func () {
+		defer func() {
 			err = rc.Close()
-		}
+		}()
 		body, err := io.ReadAll(rc)
 		if err != nil {
 			return nil, fmt.Errorf("readAll: %v", err)

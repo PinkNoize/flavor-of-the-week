@@ -40,7 +40,7 @@ func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 	}
 	defer func () {
 		_ = r.Body.Close()
-	}
+	}()
 
 	if setup.Maintenance {
 		err = writeMaintenanceResponse(w)
