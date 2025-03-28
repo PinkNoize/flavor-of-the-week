@@ -38,7 +38,9 @@ func DiscordFunctionEntry(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "signature mismatch", http.StatusUnauthorized)
 		return
 	}
-	defer r.Body.Close()
+	defer func () {
+		_ = r.Body.Close()
+	}
 
 	if setup.Maintenance {
 		err = writeMaintenanceResponse(w)
