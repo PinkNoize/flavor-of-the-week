@@ -45,7 +45,7 @@ func PollPubSub(ctx context.Context, _ PubSubMessage) error {
 func endActivePolls(ctx context.Context, cl *clients.Clients) error {
 	discordClient, err := cl.Discord()
 	if err != nil {
-		return fmt.Errorf("Discord: %v", err)
+		return fmt.Errorf("discord: %v", err)
 	}
 	// Get all active polls
 	guilds, err := guild.GetGuildsWithActivePolls(ctx, cl)
@@ -119,7 +119,7 @@ func startScheduledPolls(ctx context.Context, now time.Time, cl *clients.Clients
 func notifyUpcomingPolls(ctx context.Context, now time.Time, cl *clients.Clients) error {
 	discordSession, err := cl.Discord()
 	if err != nil {
-		return fmt.Errorf("Discord: %v", err)
+		return fmt.Errorf("discord: %v", err)
 	}
 
 	tomorrow := now.Add(24 * time.Hour)

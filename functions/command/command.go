@@ -134,7 +134,7 @@ func (c *DiscordCommand) ToCommand(ctx context.Context, cl *clients.Clients) (Co
 	case discordgo.InteractionMessageComponent:
 		return c.fromMessageComponent(ctx, cl)
 	}
-	return nil, fmt.Errorf("Unexpected interaction type: %v", c.Type())
+	return nil, fmt.Errorf("unexpected interaction type: %v", c.Type())
 }
 
 func (c *DiscordCommand) fromApplicationCommand() (Command, error) {
@@ -175,7 +175,7 @@ func (c *DiscordCommand) fromApplicationCommand() (Command, error) {
 				name = nameOpt.StringValue()
 			}
 			if c.interaction.Member == nil {
-				return nil, fmt.Errorf("Member not found in interaction")
+				return nil, fmt.Errorf("member not found in interaction")
 			}
 			return NewNominationListCommand(c.interaction.GuildID, "", name), nil
 		case "mine":
@@ -185,7 +185,7 @@ func (c *DiscordCommand) fromApplicationCommand() (Command, error) {
 				name = nameOpt.StringValue()
 			}
 			if c.interaction.Member == nil {
-				return nil, fmt.Errorf("Member not found in interaction")
+				return nil, fmt.Errorf("member not found in interaction")
 			}
 			return NewNominationListCommand(c.interaction.GuildID, c.interaction.Member.User.ID, name), nil
 		default:
@@ -268,10 +268,10 @@ func (c *DiscordCommand) fromMessageComponent(ctx context.Context, cl *clients.C
 			if len(msgData.Values) > 0 {
 				return NewAddCommand(c.interaction.GuildID, "game", msgData.Values[0]), nil
 			}
-			return nil, fmt.Errorf("No values provided: %v", msgData.Values)
+			return nil, fmt.Errorf("no values provided: %v", msgData.Values)
 		}
 	}
-	return nil, fmt.Errorf("Unexpected message component: %v", msgData)
+	return nil, fmt.Errorf("unexpected message component: %v", msgData)
 }
 
 type Command interface {

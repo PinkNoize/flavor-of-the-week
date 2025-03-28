@@ -53,7 +53,9 @@ func New(ctx context.Context, projectID, discordToken, rawgToken string) *Client
 			}
 			return nil, fmt.Errorf("failed to read object: %v", err)
 		}
-		defer rc.Close()
+		defer func() {
+			err = rc.Close()
+		}()
 		body, err := io.ReadAll(rc)
 		if err != nil {
 			return nil, fmt.Errorf("readAll: %v", err)
@@ -61,13 +63,13 @@ func New(ctx context.Context, projectID, discordToken, rawgToken string) *Client
 		var userList []string
 		err = json.Unmarshal(body, &userList)
 		if err != nil {
-			return nil, fmt.Errorf("Unmarshal: %v", err)
+			return nil, fmt.Errorf("unmarshal: %v", err)
 		}
 		userLookup := make(map[string]struct{})
 		for _, user := range userList {
 			userLookup[user] = struct{}{}
 		}
-		return userLookup, nil
+		return userLookup, err
 	})
 	return &Clients{
 		firestoreClient: &f,

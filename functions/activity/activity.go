@@ -116,7 +116,7 @@ func GetActivity(ctx context.Context, name, guildID string, cl *clients.Clients)
 	}
 	err = activityDocSnap.DataTo(&act.inner)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to deserialize activity: %v", err)
+		return nil, fmt.Errorf("failed to deserialize activity: %v", err)
 	}
 	return &act, nil
 }
@@ -161,7 +161,7 @@ func (act *Activity) RemoveActivity(ctx context.Context, force bool) error {
 	if force {
 		_, err := act.docRef.Delete(ctx)
 		if err != nil {
-			return fmt.Errorf("Failed to delete %v (%v)", act.docName, act.inner.Name)
+			return fmt.Errorf("failed to delete %v (%v)", act.docName, act.inner.Name)
 		}
 		return nil
 	}
@@ -170,7 +170,7 @@ func (act *Activity) RemoveActivity(ctx context.Context, force bool) error {
 	}
 	_, err := act.docRef.Delete(ctx, firestore.LastUpdateTime(act.updateTime))
 	if err != nil {
-		return fmt.Errorf("Failed to delete %v (%v)", act.docName, act.inner.Name)
+		return fmt.Errorf("failed to delete %v (%v)", act.docName, act.inner.Name)
 	}
 	return nil
 }
@@ -243,7 +243,7 @@ func GetActivitiesPage(ctx context.Context, guildID string, pageNum int, opts *A
 			if ok && ae.Reason == DOES_NOT_EXIST {
 				return []utils.GameEntry{}, true, nil
 			}
-			return nil, false, fmt.Errorf("GetActivity: %v", err)
+			return nil, false, fmt.Errorf("getActivity: %v", err)
 		}
 		imageUrl := ""
 		if act.inner.GameInfo != nil {
@@ -460,7 +460,7 @@ func GetRandomActivities(ctx context.Context, guildID string, n int, cl *clients
 func ClearNominations(ctx context.Context, guildID string, cl *clients.Clients) error {
 	firestoreClient, err := cl.Firestore()
 	if err != nil {
-		return fmt.Errorf("Firestore: %v", err)
+		return fmt.Errorf("firestore: %v", err)
 	}
 	activityCollection, err := getCollection(cl)
 	if err != nil {
@@ -504,7 +504,7 @@ func ClearNominations(ctx context.Context, guildID string, cl *clients.Clients) 
 			},
 		})
 		if err != nil {
-			return fmt.Errorf("Update: %v", err)
+			return fmt.Errorf("update: %v", err)
 		}
 	}
 	return nil
@@ -523,7 +523,7 @@ func GetPoolSize(ctx context.Context, guildID string, cl *clients.Clients) (int6
 	aggregationQuery := query.NewAggregationQuery().WithCount("all")
 	results, err := aggregationQuery.Get(ctx)
 	if err != nil {
-		return 0, fmt.Errorf("Get: %v", err)
+		return 0, fmt.Errorf("get: %v", err)
 	}
 
 	count, ok := results["all"]
@@ -545,7 +545,7 @@ func RecoverActivity(ctx context.Context, guildID, partialName string, cl *clien
 	if err != nil {
 		ae, ok := err.(*ActivityError)
 		if ok && ae.Reason != DOES_NOT_EXIST {
-			return "", fmt.Errorf("GetActivity: %v", err)
+			return "", fmt.Errorf("getActivity: %v", err)
 		}
 	} else {
 		return act.inner.Name, nil
@@ -592,7 +592,7 @@ func RecoverActivity(ctx context.Context, guildID, partialName string, cl *clien
 		results = append(results, inAct.Name)
 	}
 	if len(results) < 1 {
-		return "", fmt.Errorf("No matching activities found")
+		return "", fmt.Errorf("no matching activities found")
 	}
 	// Randomly choose one of the matching activities ¯\_(ツ)_/¯
 	choice := rand.Intn(len(results))
