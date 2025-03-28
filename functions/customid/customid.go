@@ -102,7 +102,7 @@ func GetCustomID(ctx context.Context, discordCustomID string, cl *clients.Client
 	}
 	err = docSnap.DataTo(&id.innerCustomID)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to deserialize customID: %v", err)
+		return nil, fmt.Errorf("failed to deserialize customID: %v", err)
 	}
 
 	return &id, nil
