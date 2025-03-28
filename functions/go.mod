@@ -2,6 +2,8 @@ module github.com/PinkNoize/flavor-of-the-week/functions
 
 go 1.22.7
 
+toolchain go1.22.12
+
 require (
 	cloud.google.com/go/storage v1.46.0
 	github.com/dimuska139/rawg-sdk-go/v3 v3.0.1-0.20220528100133-4f9c741ea59a
