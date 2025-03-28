@@ -116,7 +116,7 @@ func GetActivity(ctx context.Context, name, guildID string, cl *clients.Clients)
 	}
 	err = activityDocSnap.DataTo(&act.inner)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to deserialize activity: %v", err)
+		return nil, fmt.Errorf("failed to deserialize activity: %v", err)
 	}
 	return &act, nil
 }
@@ -161,7 +161,7 @@ func (act *Activity) RemoveActivity(ctx context.Context, force bool) error {
 	if force {
 		_, err := act.docRef.Delete(ctx)
 		if err != nil {
-			return fmt.Errorf("Failed to delete %v (%v)", act.docName, act.inner.Name)
+			return fmt.Errorf("failed to delete %v (%v)", act.docName, act.inner.Name)
 		}
 		return nil
 	}
@@ -170,7 +170,7 @@ func (act *Activity) RemoveActivity(ctx context.Context, force bool) error {
 	}
 	_, err := act.docRef.Delete(ctx, firestore.LastUpdateTime(act.updateTime))
 	if err != nil {
-		return fmt.Errorf("Failed to delete %v (%v)", act.docName, act.inner.Name)
+		return fmt.Errorf("failed to delete %v (%v)", act.docName, act.inner.Name)
 	}
 	return nil
 }
