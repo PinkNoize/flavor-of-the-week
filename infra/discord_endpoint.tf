@@ -6,7 +6,7 @@ resource "google_cloudfunctions2_function" "discord_endpoint" {
   description = "Discord HTTP Endpoint"
 
   build_config {
-    runtime     = "go124"
+    runtime     = "go123"
     entry_point = "DiscordFunctionEntry"
     source {
       storage_source {
