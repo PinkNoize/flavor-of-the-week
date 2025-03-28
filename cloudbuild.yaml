@@ -31,7 +31,7 @@ steps:
     script: terraform apply -no-color --auto-approve /workspace/plan
   - id: 'Deploy Discord config'
     dir: deploy-commands-function
-    name: golang:1.22
+    name: golang:1.24
     script: go run .
     env:
       - 'DISCORD_SECRET_ID=$_DISCORD_SECRET_ID'
