@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 
 	"cloud.google.com/go/firestore"
 	"github.com/PinkNoize/flavor-of-the-week/functions/activity"
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
+	"github.com/PinkNoize/flavor-of-the-week/functions/setup"
 	"go.uber.org/zap"
 	"google.golang.org/api/iterator"
 )
@@ -23,6 +25,10 @@ func main() {
 	source_server := args[1]
 	dest_server := args[2]
 	project := os.Getenv("GOOGLE_CLOUD_PROJECT")
+
+	setup.ENV = "main"
+	setup.ProjectID = project
+
 	client := clients.New(ctx, project, "", "")
 
 	fs, err := client.Firestore()
@@ -48,23 +54,23 @@ func main() {
 		var inAct activity.InnerActivity
 		err = doc.DataTo(&inAct)
 		if err != nil {
-			logger.Sugar().Fatalf("doc.DataTo: %v", err)
+			log.Fatalf("doc.DataTo: %v", err)
 		}
 
 		// Copy to new server
 		_, err = activity.Create(ctx, inAct.Typ, inAct.Name, dest_server, inAct.GameInfo, client)
 		if err != nil {
-			logger.Sugar().Fatalf("activity.Create: %s", err)
+			log.Fatalf("activity.Create: %s", err)
 		}
 
 		act, err := activity.GetActivity(ctx, inAct.Name, source_server, client)
 		if err != nil {
-			logger.Sugar().Fatalf("activity.GetActivity: %s", err)
+			log.Fatalf("activity.GetActivity: %s", err)
 		}
 
 		err = act.RemoveActivity(ctx, true)
 		if err != nil {
-			logger.Sugar().Errorf("Failed to remove: %s", inAct.Name)
+			log.Printf("Failed to remove: %s", inAct.Name)
 		}
 		docCounter += 1
 		if docCounter%10 == 0 {
