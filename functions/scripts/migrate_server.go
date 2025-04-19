@@ -52,10 +52,16 @@ func main() {
 		}
 
 		// Copy to new server
-		act, err := activity.Create(ctx, inAct.Typ, inAct.Name, dest_server, inAct.GameInfo, client)
+		_, err = activity.Create(ctx, inAct.Typ, inAct.Name, dest_server, inAct.GameInfo, client)
 		if err != nil {
 			logger.Sugar().Fatalf("activity.Create: %s", err)
 		}
+
+		act, err := activity.GetActivity(ctx, inAct.Name, source_server, client)
+		if err != nil {
+			logger.Sugar().Fatalf("activity.GetActivity: %s", err)
+		}
+
 		err = act.RemoveActivity(ctx, true)
 		if err != nil {
 			logger.Sugar().Errorf("Failed to remove: %s", inAct.Name)
