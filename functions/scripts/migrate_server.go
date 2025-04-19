@@ -14,8 +14,8 @@ import (
 
 func main() {
 	args := os.Args
-	if len(args) <= 2 {
-		println("%s <src server> <dest server>", args[0])
+	if len(args) <= 3 {
+		fmt.Printf("%s <src server> <dest server>", args[0])
 		return
 	}
 	logger := zap.L()
@@ -62,8 +62,8 @@ func main() {
 		}
 		docCounter += 1
 		if docCounter%10 == 0 {
-			println("Migrated %s activities", docCounter)
+			fmt.Printf("Migrated %v activities\n", docCounter)
 		}
 	}
-	println("Copied %s activites from %s to %s", docCounter, source_server, dest_server)
+	fmt.Printf("Copied %v activites from %v to %v", docCounter, source_server, dest_server)
 }
