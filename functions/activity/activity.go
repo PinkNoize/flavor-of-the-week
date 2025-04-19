@@ -69,7 +69,7 @@ type GameInfo struct {
 	BackgroundImage string `firestore:"bg_image"`
 }
 
-type innerActivity struct {
+type InnerActivity struct {
 	Typ              ActivityType `firestore:"type"`
 	Name             string       `firestore:"name"`
 	SearchName       string       `firestore:"search_name"`
@@ -82,7 +82,7 @@ type innerActivity struct {
 
 type Activity struct {
 	docName    string
-	inner      innerActivity
+	inner      InnerActivity
 	docRef     *firestore.DocumentRef
 	updateTime time.Time
 }
@@ -133,7 +133,7 @@ func Create(ctx context.Context, typ ActivityType, name, guildID string, gameInf
 
 	docName := generateName(guildID, name)
 	activityDoc := activityCollection.Doc(docName)
-	inAct := innerActivity{
+	inAct := InnerActivity{
 		Typ:        typ,
 		Name:       name,
 		SearchName: strings.ToLower(name),
@@ -309,7 +309,7 @@ func GetActivitiesPage(ctx context.Context, guildID string, pageNum int, opts *A
 		if err != nil {
 			return nil, false, fmt.Errorf("iter.Next: %v", err)
 		}
-		var inAct innerActivity
+		var inAct InnerActivity
 		err = doc.DataTo(&inAct)
 		if err != nil {
 			return nil, false, fmt.Errorf("doc.DataTo: %v", err)
@@ -367,7 +367,7 @@ func AutocompleteActivities(ctx context.Context, guildID, text string, cl *clien
 		if err != nil {
 			return []*discordgo.ApplicationCommandOptionChoice{}, fmt.Errorf("iter.Next: %v", err)
 		}
-		var inAct innerActivity
+		var inAct InnerActivity
 		err = doc.DataTo(&inAct)
 		if err != nil {
 			return []*discordgo.ApplicationCommandOptionChoice{}, fmt.Errorf("doc.DataTo: %v", err)
@@ -407,7 +407,7 @@ func GetTopNominations(ctx context.Context, guildID string, n int, cl *clients.C
 		if err != nil {
 			return nil, fmt.Errorf("iter.Next: %v", err)
 		}
-		var inAct innerActivity
+		var inAct InnerActivity
 		err = doc.DataTo(&inAct)
 		if err != nil {
 			return nil, fmt.Errorf("doc.DataTo: %v", err)
@@ -447,7 +447,7 @@ func GetRandomActivities(ctx context.Context, guildID string, n int, cl *clients
 		if err != nil {
 			return nil, fmt.Errorf("iter.Next: %v", err)
 		}
-		var inAct innerActivity
+		var inAct InnerActivity
 		err = doc.DataTo(&inAct)
 		if err != nil {
 			return nil, fmt.Errorf("doc.DataTo: %v", err)
@@ -584,7 +584,7 @@ func RecoverActivity(ctx context.Context, guildID, partialName string, cl *clien
 		if err != nil {
 			return "", fmt.Errorf("iter.Next: %v", err)
 		}
-		var inAct innerActivity
+		var inAct InnerActivity
 		err = doc.DataTo(&inAct)
 		if err != nil {
 			return "", fmt.Errorf("doc.DataTo: %v", err)
