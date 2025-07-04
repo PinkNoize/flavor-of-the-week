@@ -314,6 +314,12 @@ func (c *EndPollCommand) Execute(ctx context.Context, cl *clients.Clients) (*dis
 		if pollID.SuddenDeath {
 			// If it is a sudden death poll, choose at random
 			winner := winners[rand.Intn(len(winners))]
+			if winner == "Reroll" {
+				// Create a new poll
+				pollCmd := NewStartPollCommand(c.GuildID)
+				pollCmd.SkipActivePollCheck(true)
+				return pollCmd.Execute(ctx, cl)
+			}
 			// Post winner and cleanup
 			_, err = s.ChannelMessageSendComplex(pollID.ChannelID, &discordgo.MessageSend{
 				Embeds: []*discordgo.MessageEmbed{
