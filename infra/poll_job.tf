@@ -22,7 +22,7 @@ resource "google_cloudfunctions2_function" "poll" {
   description = "Poll Function"
 
   build_config {
-    runtime     = "go123"
+    runtime     = "go125"
     entry_point = "PollPubSub"
     source {
       storage_source {
