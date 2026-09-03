@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/v2"
 
 	"github.com/PinkNoize/flavor-of-the-week/functions/activity"
 	"github.com/PinkNoize/flavor-of-the-week/functions/command"
@@ -170,7 +170,7 @@ func handlePing(ctx context.Context, w http.ResponseWriter) {
 }
 
 func forwardCommand(ctx context.Context, command *command.DiscordCommand) error {
-	result := setup.CommandTopic.Publish(ctx, &pubsub.Message{
+	result := setup.CommandTopicPublisher.Publish(ctx, &pubsub.Message{
 		Data: command.RawInteraction(),
 	})
 	_, err := result.Get(ctx)

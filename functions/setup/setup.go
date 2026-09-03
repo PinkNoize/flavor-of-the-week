@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/v2"
 	"github.com/PinkNoize/flavor-of-the-week/functions/clients"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -20,7 +20,7 @@ var ResourcesBucket string = os.Getenv("RESOURCES_BUCKET")
 
 var DiscordPubkey []byte
 var ClientLoader *clients.Clients
-var CommandTopic *pubsub.Topic
+var CommandTopicPublisher *pubsub.Publisher
 var ZapLogger *zap.Logger
 var ZapSlogger *zap.SugaredLogger
 
@@ -32,7 +32,7 @@ func init() {
 	if err != nil {
 		ZapSlogger.Fatalf("Failed to create pubsub client: %v", err)
 	}
-	CommandTopic = pubsubClient.Topic(CommandTopicID)
+	CommandTopicPublisher = pubsubClient.Publisher(CommandTopicID)
 
 	DiscordPubkey, err = hex.DecodeString(os.Getenv("DISCORD_PUBKEY"))
 	if err != nil {
